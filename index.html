@@ -1,372 +1,452 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>XO Game - Professional Edition</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --background-color: #1a2a4c;
-      --primary-color: #00e5ff; /* Cyan accent */
-      --secondary-color: #ff00ff; /* Magenta accent */
-      --cell-bg-color: #2a3a5c;
-      --cell-hover-bg: #3a4a6c;
-      --text-color: #f0f0f0;
-      --border-radius: 12px;
-      --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-      --transition-speed: 0.3s;
-    }
+    <meta charset="UTF-8">
+    <title>XO Elite Arena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0d0c22;
+            --primary-glow: #00e5ff;
+            --secondary-glow: #ff00ff;
+            --container-bg: rgba(13, 12, 34, 0.8);
+            --cell-bg: rgba(42, 58, 92, 0.5);
+            --border-color: rgba(0, 229, 255, 0.3);
+            --text-color: #f0f0f0;
+            --font-family: 'Cairo', sans-serif;
+        }
 
-    body {
-      font-family: 'Roboto', sans-serif;
-      text-align: center;
-      margin: 0;
-      padding: 20px;
-      background-color: var(--background-color);
-      color: var(--text-color);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-    }
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            overflow-y: auto; /* يسمح بالتمرير */
+        }
 
-    h2 {
-      font-family: 'Montserrat', sans-serif;
-      font-size: 3rem;
-      color: var(--primary-color);
-      text-shadow: 0 0 15px var(--primary-color);
-      margin-bottom: 30px;
-    }
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 40px);
+        }
 
-    .container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 40px;
-      justify-content: center;
-      align-items: flex-start;
-      width: 100%;
-      max-width: 1000px;
-    }
+        .screen.active {
+            display: flex;
+        }
+        
+        .form-container {
+             background: var(--cell-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 0 25px rgba(0, 229, 255, 0.1);
+            backdrop-filter: blur(10px);
+            width: 100%;
+            max-width: 400px;
+        }
 
-    .controls-container, .game-container {
-      background-color: var(--cell-bg-color);
-      padding: 25px;
-      border-radius: var(--border-radius);
-      box-shadow: var(--shadow);
-      flex: 1;
-      min-width: 320px;
-    }
-    
-    .game-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
+        h2 {
+            font-size: 2.5rem; text-align: center; color: var(--primary-glow);
+            text-shadow: 0 0 10px var(--primary-glow), 0 0 20px var(--primary-glow);
+            margin-bottom: 25px;
+        }
 
-    .control-section {
-      margin-bottom: 25px;
-    }
+        input, button {
+            font-family: var(--font-family); width: 100%; padding: 12px;
+            margin-bottom: 15px; border-radius: 8px; border: 1px solid var(--border-color);
+            background-color: rgba(0, 0, 0, 0.3); color: var(--text-color);
+            font-size: 1rem; box-sizing: border-box; transition: all 0.3s ease;
+        }
+        
+        button {
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            border: none; font-weight: bold; cursor: pointer; text-transform: uppercase;
+        }
 
-    .control-section:last-child {
-      margin-bottom: 0;
-    }
-    
-    input[type="text"], button {
-        font-family: 'Roboto', sans-serif;
-        width: 100%;
-        padding: 12px;
-        margin-bottom: 12px;
-        border-radius: 8px;
-        border: 2px solid transparent;
-        background-color: #3a4a6c;
-        color: var(--text-color);
-        font-size: 16px;
-        transition: all var(--transition-speed) ease;
-        box-sizing: border-box;
-    }
-    
-    input[type="text"]:focus {
-        outline: none;
-        border-color: var(--primary-color);
-    }
+        /* Game Screen Layout */
+        #gameScreen {
+            width: 100%;
+            max-width: 1200px;
+            margin: auto;
+        }
+        
+        .game-header {
+            width: 100%; text-align: left; margin-bottom: 20px;
+        }
 
-    button {
-      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      border: none;
-      text-transform: uppercase;
-    }
+        #share-button {
+            padding: 10px 20px; width: auto; font-size: 1rem;
+        }
 
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 25px rgba(0, 229, 255, 0.4);
-    }
-    
-    #board {
-      display: grid;
-      grid-template-columns: repeat(3, 100px);
-      grid-gap: 10px;
-      margin: 20px auto;
-      width: 320px;
-      height: 320px;
-    }
+        .game-layout {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
 
-    .cell {
-      width: 100px;
-      height: 100px;
-      font-size: 3.5rem;
-      font-weight: bold;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: var(--cell-bg-color);
-      border-radius: var(--border-radius);
-      transition: background-color var(--transition-speed) ease;
-    }
+        .player-panel {
+            flex: 1; min-width: 200px; max-width: 250px;
+            text-align: center; padding: 20px;
+            background: var(--cell-bg); border-radius: 15px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .player-panel.active {
+            border-color: gold;
+            box-shadow: 0 0 20px gold;
+        }
 
-    .cell:hover {
-      background-color: var(--cell-hover-bg);
-    }
-    
-    .cell.x {
-        color: var(--primary-color);
-    }
-    
-    .cell.o {
-        color: var(--secondary-color);
-    }
+        .player-panel img {
+            width: 100px; height: 100px; border-radius: 50%;
+            border: 3px solid var(--border-color); object-fit: cover;
+            cursor: pointer;
+        }
 
-    #roomInfo, #turnInfo, #winner {
-        font-size: 1.2rem;
-        margin-top: 15px;
-        font-weight: 500;
-        min-height: 25px;
-    }
-    
-    #winner {
-        color: gold;
-        font-family: 'Montserrat', sans-serif;
-        font-size: 1.8rem;
-        animation: glow 1.5s ease-in-out infinite alternate;
-    }
+        .player-panel h3 { margin: 10px 0 5px 0; font-size: 1.5rem; }
+        .player-score { font-size: 1.2rem; }
 
-    @keyframes glow {
-      from {
-        text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #e60073, 0 0 40px #e60073;
-      }
-      to {
-        text-shadow: 0 0 20px #fff, 0 0 30px #ff4da6, 0 0 40px #ff4da6, 0 0 50px #ff4da6;
-      }
-    }
+        .board-container {
+            display: flex; flex-direction: column; align-items: center;
+        }
+        
+        #board {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 10px; width: 300px; max-width: 90vw;
+        }
+        
+        .cell {
+            aspect-ratio: 1 / 1; font-size: 3.5rem; /* Responsive font size */
+            font-weight: bold; cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            background-color: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color);
+            border-radius: 10px; transition: all 0.3s ease;
+        }
+        
+        @keyframes engrave { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }
+        .cell .symbol { animation: engrave 0.4s ease-out; }
+        .cell .x { color: var(--primary-glow); text-shadow: 0 0 15px var(--primary-glow); }
+        .cell .o { color: var(--secondary-glow); text-shadow: 0 0 15px var(--secondary-glow); }
+        
+        #game-status { text-align: center; font-size: 1.5rem; margin-top: 20px; min-height: 30px; }
+        #winner-text { color: gold; font-weight: bold; }
 
-    #roomLink {
-      margin-top: 15px;
-      font-weight: bold;
-      color: var(--primary-color);
-      cursor: pointer;
-      display: block;
-      word-wrap: break-word;
-    }
-    #roomLink:hover {
-        text-decoration: underline;
-    }
-  </style>
+        /* Modal Styles */
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: var(--bg-color); border: 1px solid var(--border-color);
+            padding: 25px; text-align: center; width: 90%; max-width: 350px; border-radius: 15px;
+        }
+        /* Profile Modal specific styles */
+        #profileModal .modal-content img { width: 120px; height: 120px; border-radius: 50%; margin-bottom: 15px; border: 3px solid var(--primary-glow); }
+        #profileModal .modal-content h3 { font-size: 2rem; margin-bottom: 10px; }
+        #profileModal .modal-content p { font-size: 1.2rem; }
+
+    </style>
 </head>
 <body>
 
-  <h2>XO GAME</h2>
+<!-- Screens -->
+<div id="registerScreen" class="screen active">
+    <div class="form-container">
+        <h2>تسجيل الدخول</h2>
+        <input id="username" placeholder="اكتب اسمك">
+        <button onclick="document.getElementById('photoUpload').click()">اختر صورة شخصية</button>
+        <input type="file" id="photoUpload" accept="image/*" style="display:none;">
+        <button onclick="register()">دخول</button>
+    </div>
+</div>
 
-  <div class="container">
-    <div class="controls-container">
-      <div class="control-section">
-        <input id="username" placeholder="اكتب اسمك هنا">
-        <input id="photo" placeholder="رابط صورتك (اختياري)">
-        <button onclick="register()">تسجيل الدخول</button>
-      </div>
-      <div class="control-section">
+<div id="homeScreen" class="screen">
+    <div class="form-container">
+        <h2 id="welcome-user">مرحباً بك</h2>
         <button onclick="makeRoom()">إنشاء غرفة جديدة</button>
         <input id="joinId" placeholder="أو أدخل كود الغرفة">
         <button onclick="joinRoom()">الانضمام لغرفة</button>
-      </div>
     </div>
+</div>
 
-    <div class="game-container">
-      <div id="roomInfo"></div>
-      <div id="board"></div>
-      <div id="turnInfo"></div>
-      <div id="winner"></div>
+<div id="gameScreen" class="screen">
+    <div class="game-header">
+        <button id="share-button" onclick="showShareModal()">دعوة لاعب</button>
     </div>
-  </div>
+    <div class="game-layout">
+        <!-- Player 1 Panel -->
+        <div id="player1-panel" class="player-panel">
+            <img id="player1-photo" src="" onclick="showProfileModal(document.getElementById('player1-name').innerText)">
+            <h3 id="player1-name"></h3>
+            <p class="player-score" id="player1-score"></p>
+        </div>
 
-  <script type="module">
+        <!-- Board -->
+        <div class="board-container">
+            <div id="board"></div>
+            <div id="game-status">
+                <span id="turn-info"></span>
+                <span id="winner-text"></span>
+            </div>
+        </div>
+
+        <!-- Player 2 Panel -->
+        <div id="player2-panel" class="player-panel">
+            <img id="player2-photo" src="" onclick="showProfileModal(document.getElementById('player2-name').innerText)">
+            <h3 id="player2-name"></h3>
+            <p class="player-score" id="player2-score"></p>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div id="shareModal" class="modal"><div class="modal-content"> ... </div></div>
+<div id="profileModal" class="modal"><div class="modal-content"> ... </div></div>
+
+
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-    import { getDatabase, ref, set, get, update, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+    import { getDatabase, ref, set, get, update, onValue } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
 
+    // --- Firebase Config ---
     const firebaseConfig = {
-      apiKey: "AIzaSyBIYAAxckJEflGIMbNRx4wMmRTUMAkG_hw",
-      authDomain: "saif-74e7b.firebaseapp.com",
-      databaseURL: "https://saif-74e7b-default-rtdb.firebaseio.com",
-      projectId: "saif-74e7b",
-      storageBucket: "saif-74e7b.firebasestorage.app",
-      messagingSenderId: "346719332357",
-      appId: "1:346719332357:web:fa1e57b3d2630a60c5d46c",
-      measurementId: "G-ZSH2W64QEV"
+        apiKey: "AIzaSyBIYAAxckJEflGIMbNRx4wMmRTUMAkG_hw",
+        authDomain: "saif-74e7b.firebaseapp.com",
+        databaseURL: "https://saif-74e7b-default-rtdb.firebaseio.com",
+        projectId: "saif-74e7b",
+        storageBucket: "saif-74e7b.firebasestorage.app",
+        messagingSenderId: "346719332357",
+        appId: "1:346719332357:web:fa1e57b3d2630a60c5d46c",
     };
-
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    let currentUser = null;
-    let currentRoom = null;
-    let playerSymbol = "";
-
-    window.register = function(){
-      const username = document.getElementById("username").value;
-      const photo = document.getElementById("photo").value || "";
-      if(!username) return alert("الرجاء إدخال اسم المستخدم!");
-      set(ref(db, "users/" + username), {
-        username: username,
-        photo: photo,
-        stars: 0
-      });
-      currentUser = username;
-      alert("تم التسجيل بنجاح ✅");
-    }
-
-    window.makeRoom = function(){
-      if(!currentUser) return alert("يجب التسجيل أولاً!");
-      const roomId = "room_" + Math.floor(Math.random()*100000);
-      set(ref(db, "games/" + roomId), {
-        host: currentUser,
-        players: [currentUser],
-        board: Array(9).fill(""),
-        turn: currentUser,
-        winner: "",
-        playerSymbols: {[currentUser]: 'X'}
-      });
-      currentRoom = roomId;
-      playerSymbol = "X";
-      document.getElementById("roomInfo").innerHTML = 
-        `كود الغرفة: <b>${roomId}</b> <br> 
-         <span id="roomLink" onclick="copyRoomLink('${roomId}')">انسخ الرابط وشاركه</span>`;
-      drawBoard(Array(9).fill(""));
-      listenRoom(roomId);
-    }
+    // --- State Variables ---
+    let currentUser = null, currentPhoto = null, currentRoom = null, playerSymbol = '';
     
-    window.copyRoomLink = function(roomId) {
-        const link = `${location.origin}?room=${roomId}`;
-        navigator.clipboard.writeText(link).then(() => {
-            alert('تم نسخ رابط الغرفة!');
+    // --- Screen Management ---
+    const screens = {
+        register: document.getElementById('registerScreen'),
+        home: document.getElementById('homeScreen'),
+        game: document.getElementById('gameScreen')
+    };
+    function showScreen(screenName) {
+        Object.values(screens).forEach(s => s.classList.remove('active'));
+        screens[screenName].classList.add('active');
+    }
+
+    // --- Core Functions ---
+    window.register = async function() {
+        const username = document.getElementById("username").value.trim();
+        if (!username) return alert("الرجاء إدخال اسم المستخدم!");
+
+        const photoFile = document.getElementById('photoUpload').files[0];
+        currentPhoto = photoFile ? await toBase64(photoFile) : "https://via.placeholder.com/100";
+        
+        await set(ref(db, `users/${username}`), { username, photo: currentPhoto, stars: 0 });
+        currentUser = username;
+        document.getElementById('welcome-user').innerText = `مرحباً بك, ${username}`;
+        showScreen('home');
+    }
+
+    window.makeRoom = async function() {
+        const roomId = "room_" + Math.floor(Math.random() * 100000);
+        await set(ref(db, `games/${roomId}`), {
+            host: currentUser,
+            players: { [currentUser]: { symbol: 'X', photo: currentPhoto } },
+            board: Array(9).fill(""),
+            turn: currentUser,
+            winner: ""
+        });
+        currentRoom = roomId;
+        playerSymbol = 'X';
+        listenRoom(roomId);
+        showScreen('game');
+    }
+
+    window.joinRoom = async function() {
+        const roomId = document.getElementById("joinId").value.trim();
+        if (!roomId) return alert("الرجاء إدخال كود الغرفة");
+
+        const roomRef = ref(db, `games/${roomId}`);
+        const snapshot = await get(roomRef);
+        if (!snapshot.exists()) return alert("هذه الغرفة غير موجودة!");
+
+        const game = snapshot.val();
+        if (Object.keys(game.players).length >= 2 && !game.players[currentUser]) {
+            return alert("الغرفة ممتلئة!");
+        }
+
+        if (!game.players[currentUser]) {
+            game.players[currentUser] = { symbol: 'O', photo: currentPhoto };
+            await update(roomRef, { players: game.players });
+        }
+        
+        currentRoom = roomId;
+        playerSymbol = game.players[currentUser].symbol;
+        listenRoom(roomId);
+        showScreen('game');
+    }
+
+    function listenRoom(roomId) {
+        onValue(ref(db, `games/${roomId}`), (snap) => {
+            const game = snap.val();
+            if (!game) return;
+            updateGameUI(game);
         });
     }
 
-    window.joinRoom = async function(){
-      if (!currentUser) return alert("يجب التسجيل أولاً للمشاركة في غرفة!");
-      const roomId = document.getElementById("joinId").value;
-      if(!roomId) return alert("الرجاء إدخال كود الغرفة");
-      
-      const roomRef = ref(db, "games/" + roomId);
-      const snapshot = await get(roomRef);
-      if(!snapshot.exists()) return alert("هذه الغرفة غير موجودة!");
-      
-      const gameData = snapshot.val();
-      if(gameData.players.length >= 2 && !gameData.players.includes(currentUser)){
-          return alert("الغرفة ممتلئة!");
-      }
+    async function makeMove(index) {
+        const roomRef = ref(db, `games/${currentRoom}`);
+        const snapshot = await get(roomRef);
+        const game = snapshot.val();
 
-      if(!gameData.players.includes(currentUser)) {
-        gameData.players.push(currentUser);
-        gameData.playerSymbols[currentUser] = 'O';
-        await update(roomRef, { players: gameData.players, playerSymbols: gameData.playerSymbols });
-      }
+        if (game.winner || game.board[index] !== "" || game.turn !== currentUser || Object.keys(game.players).length < 2) return;
 
-      currentRoom = roomId;
-      playerSymbol = gameData.playerSymbols[currentUser];
-      document.getElementById("roomInfo").innerHTML = `كود الغرفة: <b>${roomId}</b>`;
-      listenRoom(roomId);
-    }
+        game.board[index] = playerSymbol;
+        const opponent = Object.keys(game.players).find(p => p !== currentUser);
+        game.turn = opponent;
 
-    function listenRoom(roomId){
-      const boardRef = ref(db, "games/" + roomId);
-      onValue(boardRef, (snap)=>{
-        const data = snap.val();
-        if(!data) return;
-        drawBoard(data.board);
-        document.getElementById("turnInfo").innerText = "الدور على: " + data.turn;
-        if(data.winner){
-          document.getElementById("winner").innerText = "🎉 الفائز: " + data.winner;
-          if(data.winner === currentUser){
-            addStar(currentUser);
-          }
-        } else {
-            document.getElementById("winner").innerText = "";
+        const winnerSymbol = checkWinner(game.board);
+        if (winnerSymbol) {
+            game.winner = Object.keys(game.players).find(p => game.players[p].symbol === winnerSymbol);
+        } else if (!game.board.includes("")) {
+            game.winner = "تعادل";
         }
-      });
+        
+        await update(roomRef, game);
+    }
+    
+    // --- UI Update Functions ---
+    function updateGameUI(game) {
+        // Update Board
+        const boardDiv = document.getElementById("board");
+        boardDiv.innerHTML = "";
+        game.board.forEach((cell, i) => {
+            const div = document.createElement("div");
+            div.className = "cell";
+            div.innerHTML = `<span class="symbol ${cell ? cell.toLowerCase() : ''}">${cell}</span>`;
+            div.onclick = () => makeMove(i);
+            boardDiv.appendChild(div);
+        });
+
+        // Update Player Panels
+        const playerKeys = Object.keys(game.players);
+        const p1Key = playerKeys.find(key => game.players[key].symbol === 'X');
+        const p2Key = playerKeys.find(key => game.players[key].symbol === 'O');
+
+        updatePlayerPanel('1', p1Key, game.players[p1Key], game);
+        updatePlayerPanel('2', p2Key, p2Key ? game.players[p2Key] : null, game);
+
+        // Update Game Status
+        const turnInfo = document.getElementById('turn-info');
+        const winnerText = document.getElementById('winner-text');
+        if (game.winner) {
+            turnInfo.innerText = "";
+            winnerText.innerText = game.winner === 'تعادل' ? "انتهت بالتعادل!" : `🎉 الفائز: ${game.winner}`;
+        } else {
+            winnerText.innerText = "";
+            turnInfo.innerText = `الدور على: ${game.turn}`;
+        }
+    }
+    
+    function updatePlayerPanel(panelNum, key, data, game) {
+        const photoEl = document.getElementById(`player${panelNum}-photo`);
+        const nameEl = document.getElementById(`player${panelNum}-name`);
+        const scoreEl = document.getElementById(`player${panelNum}-score`);
+        const panelEl = document.getElementById(`player${panelNum}-panel`);
+
+        if (data) {
+            photoEl.src = data.photo || "https://via.placeholder.com/100";
+            photoEl.style.display = 'block';
+            nameEl.innerText = key;
+            const score = game.board.filter(c => c === data.symbol).length;
+            scoreEl.innerText = `النقاط: ${score}`;
+            panelEl.classList.toggle('active', game.turn === key && !game.winner);
+        } else { // Waiting state for player 2
+            photoEl.src = "https://via.placeholder.com/100";
+            photoEl.style.display = 'none';
+            nameEl.innerText = "في انتظار لاعب...";
+            scoreEl.innerText = "";
+            panelEl.classList.remove('active');
+        }
+    }
+    
+    // --- Utility & Helper Functions ---
+    const toBase64 = file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+
+    function checkWinner(board) {
+        const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+        for (let combo of wins) {
+            if (board[combo[0]] && board[combo[0]] === board[combo[1]] && board[combo[0]] === board[combo[2]]) return board[combo[0]];
+        }
+        return null;
     }
 
-    function drawBoard(board){
-      const boardDiv = document.getElementById("board");
-      boardDiv.innerHTML = "";
-      board.forEach((cell, i)=>{
-        const div = document.createElement("div");
-        div.className = "cell";
-        if(cell === "X") div.classList.add("x");
-        if(cell === "O") div.classList.add("o");
-        div.innerText = cell;
-        div.onclick = ()=>makeMove(i);
-        boardDiv.appendChild(div);
-      });
+    // --- Modal Logic ---
+    const shareModal = document.getElementById('shareModal');
+    const profileModal = document.getElementById('profileModal');
+
+    window.showShareModal = function() {
+        const link = `${location.origin}#${currentRoom}`;
+        const encodedLink = encodeURIComponent(link);
+        const text = encodeURIComponent("تعال نلعب XO! انضم إلى غرفتي:");
+        
+        shareModal.innerHTML = `<div class="modal-content">
+            <h3>شارك الغرفة</h3>
+            <div id="qrcode-container"></div>
+            <p>${link}</p>
+            <button onclick="navigator.clipboard.writeText('${link}').then(() => alert('تم النسخ!'))">نسخ</button>
+            <div style="margin-top: 20px;">
+                <a href="https://api.whatsapp.com/send?text=${text} ${encodedLink}" target="_blank">واتساب</a>
+            </div>
+            <button onclick="closeModal('shareModal')" style="margin-top:20px;">إغلاق</button>
+        </div>`;
+        new QRCode(document.getElementById("qrcode-container"), { text: link, width: 128, height: 128 });
+        shareModal.style.display = 'flex';
     }
 
-    async function makeMove(i){
-      if(!currentRoom) return;
-      const roomRef = ref(db, "games/" + currentRoom);
-      const roomSnap = await get(roomRef);
-      const game = roomSnap.val();
+    window.showProfileModal = async function(username) {
+        if (!username || username === "في انتظار لاعب...") return;
+        const userSnap = await get(ref(db, `users/${username}`));
+        if (!userSnap.exists()) return;
+        const userData = userSnap.val();
 
-      if(game.winner) return;
-      if(game.turn !== currentUser) return alert("ليس دورك!");
-      if(game.board[i] !== "") return;
-      if(game.players.length < 2) return alert("انتظر اللاعب الآخر لينضم.");
-
-      game.board[i] = playerSymbol;
-      
-      const opponent = game.players.find(p => p !== currentUser);
-      game.turn = opponent;
-
-      const winner = checkWinner(game.board);
-      if(winner){
-        game.winner = currentUser;
-      } else if (!game.board.includes("")) {
-          game.winner = "تعادل";
-      }
-
-      await update(roomRef, game);
+        profileModal.innerHTML = `<div class="modal-content">
+            <img src="${userData.photo}" alt="صورة الملف الشخصي">
+            <h3>${userData.username}</h3>
+            <p>⭐ النجوم: ${userData.stars || 0}</p>
+            <button onclick="closeModal('profileModal')" style="margin-top:20px;">إغلاق</button>
+        </div>`;
+        profileModal.style.display = 'flex';
     }
 
-    function checkWinner(board){
-      const wins = [
-        [0,1,2],[3,4,5],[6,7,8],
-        [0,3,6],[1,4,7],[2,5,8],
-        [0,4,8],[2,4,6]
-      ];
-      for(let [a,b,c] of wins){
-        if(board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
-      }
-      return null;
+    window.closeModal = function(modalId) {
+        document.getElementById(modalId).style.display = 'none';
     }
 
-    function addStar(username){
-      runTransaction(ref(db, "users/" + username + "/stars"), (stars)=>{
-        return (stars || 0) + 1;
-      });
+    // Handle joining via URL hash
+    if (window.location.hash) {
+        const roomId = window.location.hash.substring(1);
+        document.getElementById('joinId').value = roomId;
     }
-  </script>
+
+</script>
 </body>
 </html>
