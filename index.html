@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>XO Game - Professional Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --background-color: #1a2a4c;
+      --primary-color: #00e5ff; /* Cyan accent */
+      --secondary-color: #ff00ff; /* Magenta accent */
+      --cell-bg-color: #2a3a5c;
+      --cell-hover-bg: #3a4a6c;
+      --text-color: #f0f0f0;
+      --border-radius: 12px;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      --transition-speed: 0.3s;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    h2 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 3rem;
+      color: var(--primary-color);
+      text-shadow: 0 0 15px var(--primary-color);
+      margin-bottom: 30px;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 40px;
+      justify-content: center;
+      align-items: flex-start;
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    .controls-container, .game-container {
+      background-color: var(--cell-bg-color);
+      padding: 25px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      flex: 1;
+      min-width: 320px;
+    }
+    
+    .game-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .control-section {
+      margin-bottom: 25px;
+    }
+
+    .control-section:last-child {
+      margin-bottom: 0;
+    }
+    
+    input[type="text"], button {
+        font-family: 'Roboto', sans-serif;
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 12px;
+        border-radius: 8px;
+        border: 2px solid transparent;
+        background-color: #3a4a6c;
+        color: var(--text-color);
+        font-size: 16px;
+        transition: all var(--transition-speed) ease;
+        box-sizing: border-box;
+    }
+    
+    input[type="text"]:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+
+    button {
+      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      text-transform: uppercase;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(0, 229, 255, 0.4);
+    }
+    
+    #board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-gap: 10px;
+      margin: 20px auto;
+      width: 320px;
+      height: 320px;
+    }
+
+    .cell {
+      width: 100px;
+      height: 100px;
+      font-size: 3.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--cell-bg-color);
+      border-radius: var(--border-radius);
+      transition: background-color var(--transition-speed) ease;
+    }
+
+    .cell:hover {
+      background-color: var(--cell-hover-bg);
+    }
+    
+    .cell.x {
+        color: var(--primary-color);
+    }
+    
+    .cell.o {
+        color: var(--secondary-color);
+    }
+
+    #roomInfo, #turnInfo, #winner {
+        font-size: 1.2rem;
+        margin-top: 15px;
+        font-weight: 500;
+        min-height: 25px;
+    }
+    
+    #winner {
+        color: gold;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 1.8rem;
+        animation: glow 1.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow {
+      from {
+        text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #e60073, 0 0 40px #e60073;
+      }
+      to {
+        text-shadow: 0 0 20px #fff, 0 0 30px #ff4da6, 0 0 40px #ff4da6, 0 0 50px #ff4da6;
+      }
+    }
+
+    #roomLink {
+      margin-top: 15px;
+      font-weight: bold;
+      color: var(--primary-color);
+      cursor: pointer;
+      display: block;
+      word-wrap: break-word;
+    }
+    #roomLink:hover {
+        text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>XO GAME</h2>
+
+  <div class="container">
+    <div class="controls-container">
+      <div class="control-section">
+        <input id="username" placeholder="اكتب اسمك هنا">
+        <input id="photo" placeholder="رابط صورتك (اختياري)">
+        <button onclick="register()">تسجيل الدخول</button>
+      </div>
+      <div class="control-section">
+        <button onclick="makeRoom()">إنشاء غرفة جديدة</button>
+        <input id="joinId" placeholder="أو أدخل كود الغرفة">
+        <button onclick="joinRoom()">الانضمام لغرفة</button>
+      </div>
+    </div>
+
+    <div class="game-container">
+      <div id="roomInfo"></div>
+      <div id="board"></div>
+      <div id="turnInfo"></div>
+      <div id="winner"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+    import { getDatabase, ref, set, get, update, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBIYAAxckJEflGIMbNRx4wMmRTUMAkG_hw",
+      authDomain: "saif-74e7b.firebaseapp.com",
+      databaseURL: "https://saif-74e7b-default-rtdb.firebaseio.com",
+      projectId: "saif-74e7b",
+      storageBucket: "saif-74e7b.firebasestorage.app",
+      messagingSenderId: "346719332357",
+      appId: "1:346719332357:web:fa1e57b3d2630a60c5d46c",
+      measurementId: "G-ZSH2W64QEV"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let currentUser = null;
+    let currentRoom = null;
+    let playerSymbol = "";
+
+    window.register = function(){
+      const username = document.getElementById("username").value;
+      const photo = document.getElementById("photo").value || "";
+      if(!username) return alert("الرجاء إدخال اسم المستخدم!");
+      set(ref(db, "users/" + username), {
+        username: username,
+        photo: photo,
+        stars: 0
+      });
+      currentUser = username;
+      alert("تم التسجيل بنجاح ✅");
+    }
+
+    window.makeRoom = function(){
+      if(!currentUser) return alert("يجب التسجيل أولاً!");
+      const roomId = "room_" + Math.floor(Math.random()*100000);
+      set(ref(db, "games/" + roomId), {
+        host: currentUser,
+        players: [currentUser],
+        board: Array(9).fill(""),
+        turn: currentUser,
+        winner: "",
+        playerSymbols: {[currentUser]: 'X'}
+      });
+      currentRoom = roomId;
+      playerSymbol = "X";
+      document.getElementById("roomInfo").innerHTML = 
+        `كود الغرفة: <b>${roomId}</b> <br> 
+         <span id="roomLink" onclick="copyRoomLink('${roomId}')">انسخ الرابط وشاركه</span>`;
+      drawBoard(Array(9).fill(""));
+      listenRoom(roomId);
+    }
+    
+    window.copyRoomLink = function(roomId) {
+        const link = `${location.origin}?room=${roomId}`;
+        navigator.clipboard.writeText(link).then(() => {
+            alert('تم نسخ رابط الغرفة!');
+        });
+    }
+
+    window.joinRoom = async function(){
+      if (!currentUser) return alert("يجب التسجيل أولاً للمشاركة في غرفة!");
+      const roomId = document.getElementById("joinId").value;
+      if(!roomId) return alert("الرجاء إدخال كود الغرفة");
+      
+      const roomRef = ref(db, "games/" + roomId);
+      const snapshot = await get(roomRef);
+      if(!snapshot.exists()) return alert("هذه الغرفة غير موجودة!");
+      
+      const gameData = snapshot.val();
+      if(gameData.players.length >= 2 && !gameData.players.includes(currentUser)){
+          return alert("الغرفة ممتلئة!");
+      }
+
+      if(!gameData.players.includes(currentUser)) {
+        gameData.players.push(currentUser);
+        gameData.playerSymbols[currentUser] = 'O';
+        await update(roomRef, { players: gameData.players, playerSymbols: gameData.playerSymbols });
+      }
+
+      currentRoom = roomId;
+      playerSymbol = gameData.playerSymbols[currentUser];
+      document.getElementById("roomInfo").innerHTML = `كود الغرفة: <b>${roomId}</b>`;
+      listenRoom(roomId);
+    }
+
+    function listenRoom(roomId){
+      const boardRef = ref(db, "games/" + roomId);
+      onValue(boardRef, (snap)=>{
+        const data = snap.val();
+        if(!data) return;
+        drawBoard(data.board);
+        document.getElementById("turnInfo").innerText = "الدور على: " + data.turn;
+        if(data.winner){
+          document.getElementById("winner").innerText = "🎉 الفائز: " + data.winner;
+          if(data.winner === currentUser){
+            addStar(currentUser);
+          }
+        } else {
+            document.getElementById("winner").innerText = "";
+        }
+      });
+    }
+
+    function drawBoard(board){
+      const boardDiv = document.getElementById("board");
+      boardDiv.innerHTML = "";
+      board.forEach((cell, i)=>{
+        const div = document.createElement("div");
+        div.className = "cell";
+        if(cell === "X") div.classList.add("x");
+        if(cell === "O") div.classList.add("o");
+        div.innerText = cell;
+        div.onclick = ()=>makeMove(i);
+        boardDiv.appendChild(div);
+      });
+    }
+
+    async function makeMove(i){
+      if(!currentRoom) return;
+      const roomRef = ref(db, "games/" + currentRoom);
+      const roomSnap = await get(roomRef);
+      const game = roomSnap.val();
+
+      if(game.winner) return;
+      if(game.turn !== currentUser) return alert("ليس دورك!");
+      if(game.board[i] !== "") return;
+      if(game.players.length < 2) return alert("انتظر اللاعب الآخر لينضم.");
+
+      game.board[i] = playerSymbol;
+      
+      const opponent = game.players.find(p => p !== currentUser);
+      game.turn = opponent;
+
+      const winner = checkWinner(game.board);
+      if(winner){
+        game.winner = currentUser;
+      } else if (!game.board.includes("")) {
+          game.winner = "تعادل";
+      }
+
+      await update(roomRef, game);
+    }
+
+    function checkWinner(board){
+      const wins = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      for(let [a,b,c] of wins){
+        if(board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
+      }
+      return null;
+    }
+
+    function addStar(username){
+      runTransaction(ref(db, "users/" + username + "/stars"), (stars)=>{
+        return (stars || 0) + 1;
+      });
+    }
+  </script>
+</body>
+</html>
