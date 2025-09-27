@@ -48,6 +48,7 @@
         }
         .button:hover { transform: translateY(-5px); box-shadow: 10px 10px 20px rgba(0,0,0,0.3), -10px -10px 20px rgba(255,255,255,0.1); }
         .button:active { transform: translateY(2px); box-shadow: inset 5px 5px 10px rgba(0,0,0,0.2), inset -5px -5px 10px rgba(255,255,255,0.1); }
+        .button:disabled { background-color: #aaa; cursor: not-allowed; transform: translateY(0); box-shadow: 7px 7px 15px rgba(0,0,0,0.2); }
 
         .icon-button { background: transparent; border: none; cursor: pointer; padding: 10px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
         .icon-button svg { width: 32px; height: 32px; fill: var(--text-color); }
@@ -67,10 +68,31 @@
         
         #game-screen .game-layout { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; width: 100%; max-width: 1200px; gap: 20px; }
         .game-players-container { display: flex; justify-content: center; gap: 20px; width: 100%; order: -1; } /* Puts players on top on mobile */
-        .player-panel { background-color: var(--panel-bg); border-radius: 20px; padding: 15px; text-align: center; width: clamp(150px, 40vw, 180px); border: 3px solid transparent; transition: all 0.3s ease-in-out; backdrop-filter: blur(5px); position: relative;}
-        .player-panel img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 10px; border: 4px solid var(--grid-color); }
-        .player-name { font-size: 1.4rem; font-weight: 700; word-wrap: break-word; }
-        .player-symbol { font-size: 2.2rem; font-weight: 900; }
+        
+        /* --- MODIFICATION: Player Panel Scrolling and Sizing --- */
+        .player-panel { 
+            background-color: var(--panel-bg); 
+            border-radius: 20px; 
+            padding: 15px; 
+            text-align: center; 
+            width: clamp(150px, 40vw, 220px); /* Increased max-width */
+            border: 3px solid transparent; 
+            transition: all 0.3s ease-in-out; 
+            backdrop-filter: blur(5px); 
+            position: relative;
+            display: flex; /* Added */
+            flex-direction: column; /* Added */
+            justify-content: flex-start; /* Added */
+            min-height: 280px; /* Added: Ensures a minimum height */
+            max-height: 40vh; /* Added: Limits growth on tall screens */
+            overflow-y: auto; /* Added: Enables scrolling when content overflows */
+        }
+
+        .player-panel img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 10px; border: 4px solid var(--grid-color); flex-shrink: 0; }
+        .player-name { font-size: 1.4rem; font-weight: 700; word-wrap: break-word; flex-shrink: 0; }
+        .player-symbol { font-size: 2.2rem; font-weight: 900; flex-shrink: 0; }
+        #p1-chat-area, #p2-chat-area { width: 100%; margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        
         .status-indicator { width: 15px; height: 15px; border-radius: 50%; position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); transition: all 0.3s ease; }
         .status-indicator.active { background-color: var(--green-glow); box-shadow: 0 0 10px var(--green-glow); }
         .status-indicator.inactive { background-color: var(--red-glow); opacity: 0.5; }
@@ -87,7 +109,7 @@
             font-size: clamp(2.5rem, 12vw, 5.5rem); 
             font-weight: 900; cursor: pointer; border: 2px solid rgba(0, 229, 255, 0.5); 
             transition: background-color 0.2s ease;
-            overflow: hidden; /* THE FIX: Prevents content from expanding the cell */
+            overflow: hidden;
         }
         .cell.x { color: var(--x-color); text-shadow: 0 0 20px var(--x-color); }
         .cell.o { color: var(--o-color); text-shadow: 0 0 20px var(--o-color); }
@@ -120,12 +142,12 @@
         .voice-chat-icon { cursor: pointer; margin-top: 10px; }
         .voice-chat-icon svg { width: 28px; height: 28px; fill: #fff; opacity: 0.7; transition: opacity 0.2s; }
         .voice-chat-icon:hover svg { opacity: 1; }
-        .voice-message-bubble { background: #442a7c; padding: 10px 15px; border-radius: 15px; display: flex; align-items: center; gap: 10px; margin: 10px auto 0; cursor: pointer; max-width: 150px; }
+        .voice-message-bubble { background: #442a7c; padding: 10px 15px; border-radius: 15px; display: flex; align-items: center; gap: 10px; cursor: pointer; width: 90%; justify-content: center; }
         .voice-message-bubble svg { width: 20px; height: 20px; fill: var(--o-color); }
         
         @media (max-width: 767px) { 
             #game-screen { overflow-y: auto; } 
-            .game-layout { padding-bottom: 50px; } /* Add padding to the bottom */
+            .game-layout { padding-bottom: 50px; }
         }
         @media (min-width: 768px) { .game-layout { flex-direction: row; align-items: center; } .game-players-container { order: 0; flex-direction: column; width: auto; } }
     </style>
@@ -179,8 +201,20 @@
         </div>
         <div class="game-layout">
             <div class="game-players-container">
-                <div id="player-1" class="player-panel"><img id="p1-avatar"><h3 id="p1-name" class="player-name"></h3><div class="player-symbol">X</div><div class="status-indicator"></div><div id="p1-chat-area"></div></div>
-                <div id="player-2" class="player-panel"><img id="p2-avatar"><h3 id="p2-name" class="player-name"></h3><div class="player-symbol">O</div><div class="status-indicator"></div><div id="p2-chat-area"></div></div>
+                <div id="player-1" class="player-panel">
+                    <img id="p1-avatar">
+                    <h3 id="p1-name" class="player-name"></h3>
+                    <div class="player-symbol">X</div>
+                    <div id="p1-chat-area"></div>
+                    <div class="status-indicator"></div>
+                </div>
+                <div id="player-2" class="player-panel">
+                    <img id="p2-avatar">
+                    <h3 id="p2-name" class="player-name"></h3>
+                    <div class="player-symbol">O</div>
+                    <div id="p2-chat-area"></div>
+                    <div class="status-indicator"></div>
+                </div>
             </div>
             <div id="board"></div>
         </div>
@@ -210,6 +244,7 @@
         let mediaRecorder;
         let audioChunks = [];
         let recordedBlob = null;
+        let mediaStream = null;
 
         window.showScreen = (screenName) => {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -326,6 +361,7 @@
             await set(gameRef, {
                 players: { [gameState.player.name]: gameState.player },
                 board: Array(9).fill(''), turn: gameState.player.name, p1: gameState.player.name,
+                voiceMessages: {}
             });
             listenToGame(roomId);
         };
@@ -338,8 +374,7 @@
             const snapshot = await get(gameRef);
             if(!snapshot.exists()) return showToast("الغرفة غير موجودة!");
             let gameData = snapshot.val();
-            if(Object.keys(gameData.players).length >= 2) return showToast("الغرفة ممتلئة!");
-            if(gameData.players[gameState.player.name]) return showToast("لا يمكنك الانضمام بنفس الاسم الموجود بالفعل في الغرفة!");
+            if(Object.keys(gameData.players).length >= 2 && !gameData.players[gameState.player.name]) return showToast("الغرفة ممتلئة!");
 
             gameData.players[gameState.player.name] = gameState.player;
             gameData.p2 = gameState.player.name;
@@ -350,18 +385,29 @@
         const listenToGame = (roomId) => {
             gameState.roomId = roomId;
             activeGameRef = ref(db, `games/${roomId}`);
+            
             const onDisconnectRef = onDisconnect(activeGameRef);
             onDisconnectRef.update({ leaver: gameState.player.name });
 
             gameValueListener = onValue(activeGameRef, (snap) => {
                 const gameData = snap.val();
-                if(!gameData) {
+                if (!gameData) {
+                    if (gameValueListener) {
+                        gameValueListener();
+                        gameValueListener = null;
+                    }
+                    showToast("تم إغلاق الغرفة.");
                     goToOnlineHome();
                     return;
                 }
+
                 gameState.gameData = gameData;
                 gameState.board = gameData.board;
-                gameState.isGameActive = !gameData.winner && !gameData.leaver;
+                
+                if (!gameData.winner && !gameData.leaver) {
+                     gameState.isGameActive = true;
+                }
+
                 updatePlayerUI(1, gameData.players[gameData.p1]);
                 updatePlayerUI(2, gameData.players[gameData.p2]);
                 renderBoard();
@@ -369,30 +415,31 @@
                 showScreen('game');
                 
                 if(gameData.rematch) {
-                    if (gameData.rematch.status === 'rejected' && gameData.rematch.requester === gameState.player.name) {
-                        showToast('رفض الخصم اللعب مجددًا');
-                        update(activeGameRef, { rematch: null }); 
-                    } else if (gameData.rematch.requester !== gameState.player.name && !gameData.rematch.responder) {
+                    const amIRequester = gameData.rematch.requester === gameState.player.name;
+                    const isRequestPending = !gameData.rematch.responder;
+
+                    if (amIRequester && isRequestPending && showModalIsActive('winner')) {
+                        document.getElementById('play-again-button').disabled = true;
+                        document.getElementById('play-again-button').textContent = 'في انتظار الخصم...';
+                    } else if (!amIRequester && isRequestPending) {
                         showRematchModal(gameData.rematch.requester);
+                    } else if (gameData.rematch.status === 'rejected' && amIRequester) {
+                        showToast('رفض الخصم اللعب مجددًا');
+                        update(activeGameRef, { rematch: null });
                     }
                 } else {
-                    showModal('rematch', false);
-                    document.getElementById('play-again-button').disabled = false;
-                    document.getElementById('play-again-button').textContent = 'لعب مرة أخرى';
+                     showModal('rematch', false);
+                     const playAgainBtn = document.getElementById('play-again-button');
+                     if (playAgainBtn) {
+                         playAgainBtn.disabled = false;
+                         playAgainBtn.textContent = 'لعب مرة أخرى';
+                     }
                 }
 
-                if (gameData.voiceMessage && gameData.voiceMessage.from !== gameState.player.name) {
-                    displayVoiceMessage(gameData.voiceMessage);
-                    update(activeGameRef, { voiceMessage: null }); 
-                }
+                displayVoiceMessages(gameData.voiceMessages || {});
 
-                if (gameData.winner || gameData.leaver) {
-                    if (gameValueListener) { gameValueListener(); gameValueListener = null; } 
-                    onDisconnectRef.cancel(); 
-                    setTimeout(() => {
-                        endGame(gameData.winner === 'Draw', gameData.leaver);
-                        remove(activeGameRef);
-                    }, 500);
+                if ((gameData.winner || gameData.leaver) && gameState.isGameActive) {
+                    endGame(gameData.winner === 'Draw', gameData.leaver);
                 }
             });
         };
@@ -411,28 +458,30 @@
         };
 
         const updatePlayerUI = (playerNum, playerData) => {
-            const panel = document.getElementById(`player-${playerNum}`);
-            const nameEl = panel.querySelector('.player-name');
-            const avatarEl = panel.querySelector('img');
+            const nameEl = document.getElementById(`p${playerNum}-name`);
+            const avatarEl = document.getElementById(`p${playerNum}-avatar`);
             const chatArea = document.getElementById(`p${playerNum}-chat-area`);
             
-            chatArea.innerHTML = '';
-            if(playerData && gameState.mode === 'online' && playerData.name !== gameState.player.name) {
-                const chatIcon = document.createElement('div');
-                chatIcon.className = 'voice-chat-icon';
-                chatIcon.innerHTML = `<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>`;
-                chatIcon.onclick = () => showModal('voice-chat', true);
-                chatArea.appendChild(chatIcon);
-            }
+            // Clear only the icon, not the voice messages which are handled by displayVoiceMessages
+            const existingIcon = chatArea.querySelector('.voice-chat-icon');
+            if(existingIcon) existingIcon.remove();
 
             if(playerData) {
                 nameEl.textContent = playerData.name;
                 avatarEl.src = playerData.avatar;
-                panel.style.opacity = '1';
+                nameEl.parentElement.style.opacity = '1';
+
+                if(gameState.mode === 'online') {
+                    const chatIcon = document.createElement('div');
+                    chatIcon.className = 'voice-chat-icon';
+                    chatIcon.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1.2-9.1c0-1.03.83-1.9 1.9-1.9 1.05 0 1.9.87 1.9 1.9l-.01 6.2c0 1.03-.83 1.9-1.9 1.9s-1.9-.87-1.9-1.9V4.9zm6.5 6.1c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>`;
+                    chatIcon.onclick = () => showModal('voice-chat', true);
+                    chatArea.prepend(chatIcon); // Prepend to keep it at the top
+                }
             } else {
                 nameEl.textContent = 'في انتظار لاعب...';
                 avatarEl.src = 'https://i.ibb.co/Zc3bJcK/avatar-placeholder.png';
-                panel.style.opacity = '0.5';
+                nameEl.parentElement.style.opacity = '0.5';
             }
         };
 
@@ -465,11 +514,12 @@
                 const opponent = gameState.player.name === gameState.gameData.p1 ? gameState.gameData.p2 : gameState.gameData.p1;
                 let newBoard = [...gameState.board];
                 newBoard[index] = symbol;
-                const winner = checkWinner(newBoard);
-                await update(activeGameRef, {
-                    board: newBoard, turn: opponent,
-                    winner: winner ? (winner === 'Draw' ? 'Draw' : gameState.player.name) : null
-                });
+                const winnerResult = checkWinner(newBoard);
+                let updateData = { board: newBoard, turn: opponent };
+                if (winnerResult) {
+                     updateData.winner = winnerResult === 'Draw' ? 'Draw' : gameState.player.name;
+                }
+                await update(activeGameRef, updateData);
             }
             renderBoard();
         };
@@ -511,12 +561,8 @@
                 winnerText.textContent = 'انتهت بالتعادل!';
                 winnerAvatar.style.display = 'none';
             } else if (leaverName) {
-                if (gameState.mode === 'offline') {
-                    winner = leaverName === gameState.players[1].name ? gameState.players[2] : gameState.players[1];
-                } else {
-                    const winnerName = leaverName === gameState.gameData.p1 ? gameState.gameData.p2 : gameState.gameData.p1;
-                    if(gameState.gameData.players[winnerName]) winner = gameState.gameData.players[winnerName];
-                }
+                const winnerName = leaverName === gameState.gameData.p1 ? gameState.gameData.p2 : gameState.gameData.p1;
+                if(gameState.gameData.players[winnerName]) winner = gameState.gameData.players[winnerName];
                 if(winner) {
                     winnerText.textContent = `انسحب الخصم! ${winner.name} هو الفائز!`;
                     winnerAvatar.src = winner.avatar;
@@ -542,6 +588,8 @@
                 if (activeGameRef) {
                     if (gameState.isGameActive && gameState.gameData.p2) { 
                         await update(activeGameRef, { leaver: gameState.player.name });
+                    } else {
+                        await remove(activeGameRef);
                     }
                     goToOnlineHome();
                 }
@@ -562,7 +610,6 @@
             if (activeGameRef) {
                 if (gameValueListener) { gameValueListener(); gameValueListener = null; }
                 onDisconnect(activeGameRef).cancel();
-                remove(activeGameRef); 
                 activeGameRef = null;
             }
             showModal('winner', false);
@@ -570,9 +617,10 @@
             showScreen('online-home');
         };
 
-        document.getElementById('main-menu-button').onclick = () => {
+        document.getElementById('main-menu-button').onclick = async () => {
             showModal('winner', false); 
             if(gameState.mode === 'online') {
+                if (activeGameRef) await remove(activeGameRef);
                 goToOnlineHome();
             } else {
                 showScreen('start');
@@ -588,24 +636,34 @@
                 playAgainBtn.disabled = true;
                 playAgainBtn.textContent = 'في انتظار الخصم...';
                 await update(activeGameRef, {
-                    rematch: { requester: gameState.player.name, responder: null }
+                    rematch: { requester: gameState.player.name, responder: null, status: 'pending' }
                 });
             }
         };
 
         const showRematchModal = (requesterName) => {
+            if(showModalIsActive('rematch')) return;
             document.getElementById('rematch-requester-text').textContent = `${requesterName} يريد اللعب مرة أخرى.`;
+            showModal('winner', false); 
             showModal('rematch', true);
             document.getElementById('rematch-yes-button').onclick = async () => {
                 showModal('rematch', false);
                 await update(activeGameRef, { 
-                    board: Array(9).fill(''), winner: null, leaver: null,
-                    turn: gameState.gameData.p1, rematch: null 
+                    board: Array(9).fill(''), 
+                    winner: null, 
+                    leaver: null,
+                    turn: gameState.gameData.p2, // The other player starts
+                    rematch: null, 
+                    voiceMessages: {} 
                 });
             };
             document.getElementById('rematch-no-button').onclick = async () => {
                 showModal('rematch', false);
                 await update(activeGameRef, { rematch: { ...gameState.gameData.rematch, status: 'rejected' } });
+                setTimeout(async () => {
+                    if (activeGameRef) await remove(activeGameRef);
+                    goToOnlineHome();
+                }, 500);
             };
         };
         
@@ -674,6 +732,8 @@
                 <a href="https://twitter.com/intent/tweet?url=${encodedUrl}&text=${shareText}" target="_blank" class="social-button twitter"><svg viewBox="0 0 24 24"><path d="M22.46 6c-.77.35-1.6.58-2.46.67.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98-3.56-.18-6.73-1.89-8.84-4.48-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.22-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21a4.22 4.22 0 0 1-1.94.07 4.28 4.28 0 0 0 4 2.98 8.521 8.521 0 0 1-5.33 1.84c-.35 0-.69-.02-1.03-.06C3.44 20.29 5.7 21 8.12 21c7.34 0 11.35-6.08 11.35-11.35 0-.17 0-.34-.01-.51.78-.57 1.45-1.28 1.99-2.09z"/></svg></a>
             `;
         };
+        
+        const showModalIsActive = (modalName) => document.getElementById(`${modalName}-modal`).classList.contains('active');
 
         window.copyRoomLink = () => {
             const roomUrl = document.getElementById('room-link-text').textContent;
@@ -745,10 +805,18 @@
         const recordButton = document.getElementById('record-button');
         const voiceControls = document.getElementById('voice-controls');
 
+        const stopMediaStream = () => {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+        };
+
         const startRecording = async () => {
+            stopMediaStream(); 
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(mediaStream);
                 mediaRecorder.start();
                 audioChunks = [];
                 recordButton.textContent = 'إيقاف التسجيل';
@@ -756,51 +824,93 @@
                 mediaRecorder.addEventListener("dataavailable", event => { audioChunks.push(event.data); });
                 mediaRecorder.addEventListener("stop", () => {
                     recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    voiceControls.innerHTML = `<div class="button-container"><button id="send-voice-btn" class="button">✔️</button><button id="cancel-voice-btn" class="button">❌</button></div>`;
+                    voiceControls.innerHTML = `<div class="button-container" style="flex-direction: row;"><button id="send-voice-btn" class="button">✔️</button><button id="cancel-voice-btn" class="button">❌</button></div>`;
                     document.getElementById('send-voice-btn').onclick = sendVoiceMessage;
                     document.getElementById('cancel-voice-btn').onclick = resetVoiceModal;
                 });
-            } catch (err) { showToast("لا يمكن الوصول للميكروفون."); }
+            } catch (err) { showToast("لا يمكن الوصول للميكروفون."); stopMediaStream(); }
         };
 
-        const stopRecording = () => { if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop(); };
+        const stopRecording = () => { 
+            if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop(); 
+            stopMediaStream();
+        };
 
         const sendVoiceMessage = () => {
+            if (!recordedBlob) return;
+
+            // --- MODIFICATION: Limit voice messages to 2 per player ---
+            const myMessages = Object.values(gameState.gameData.voiceMessages || {})
+                                     .filter(msg => msg.from === gameState.player.name);
+            
+            if (myMessages.length >= 2) {
+                showToast("لقد وصلت إلى الحد الأقصى للرسائل الصوتية (2).");
+                resetVoiceModal();
+                showModal('voice-chat', false);
+                return;
+            }
+
             const reader = new FileReader();
             reader.readAsDataURL(recordedBlob);
             reader.onloadend = () => {
                 const base64String = reader.result;
                 const timestamp = Date.now();
-                update(activeGameRef, { voiceMessage: { id: timestamp, from: gameState.player.name, data: base64String } });
+                const messageId = `voice_${timestamp}`;
+                const messageData = { 
+                    id: messageId, 
+                    from: gameState.player.name, 
+                    data: base64String,
+                    readBy: [gameState.player.name]
+                };
+                update(ref(db, `games/${gameState.roomId}/voiceMessages/${messageId}`), messageData);
             };
             resetVoiceModal();
             showModal('voice-chat', false);
         };
         
         const resetVoiceModal = () => {
+             stopMediaStream();
              voiceControls.innerHTML = `<button class="button" id="record-button">بدء التسجيل</button>`;
              document.getElementById('record-button').onclick = startRecording;
              recordedBlob = null;
+             audioChunks = [];
         }
         
         recordButton.onclick = startRecording;
 
-        const displayVoiceMessage = (voiceMessage) => {
-            const chatAreaId = voiceMessage.from === gameState.player.name ? (gameState.player.name === gameState.gameData.p1 ? 'p1-chat-area' : 'p2-chat-area') : (gameState.player.name === gameState.gameData.p1 ? 'p2-chat-area' : 'p1-chat-area');
-            const chatArea = document.getElementById(chatAreaId);
-            
-            const audio = new Audio(voiceMessage.data);
-            audio.onloadedmetadata = () => {
-                const duration = Math.round(audio.duration);
+        const displayVoiceMessages = (voiceMessages) => {
+            ['p1-chat-area', 'p2-chat-area'].forEach(areaId => {
+                const chatArea = document.getElementById(areaId);
+                const bubbles = chatArea.querySelectorAll('.voice-message-bubble');
+                bubbles.forEach(b => b.remove());
+            });
+
+            for (const messageId in voiceMessages) {
+                const voiceMessage = voiceMessages[messageId];
+                const chatAreaId = voiceMessage.from === gameState.gameData.p1 ? 'p1-chat-area' : 'p2-chat-area';
+                const chatArea = document.getElementById(chatAreaId);
+
+                const audio = new Audio(voiceMessage.data);
                 const bubble = document.createElement('div');
                 bubble.className = 'voice-message-bubble';
-                bubble.innerHTML = `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> <span>(${duration} ث)</span>`;
-                bubble.onclick = () => audio.play();
-                chatArea.appendChild(bubble);
-
-                if(voiceMessage.from !== gameState.player.name) showToast(`رسالة صوتية جديدة`);
-                setTimeout(() => bubble.remove(), 15000); 
-            };
+                const isUnread = !voiceMessage.readBy.includes(gameState.player.name);
+                bubble.style.boxShadow = isUnread ? '0 0 10px var(--o-color)' : 'none';
+                
+                audio.onloadedmetadata = () => {
+                    const duration = Math.round(audio.duration);
+                    bubble.innerHTML = `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> <span>(${duration} ث)</span>`;
+                };
+                bubble.innerHTML = `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> <span>...</span>`;
+                bubble.onclick = () => {
+                    audio.play();
+                    bubble.style.boxShadow = 'none';
+                    if (isUnread) {
+                        const updatedReadBy = [...voiceMessage.readBy, gameState.player.name];
+                        update(ref(db, `games/${gameState.roomId}/voiceMessages/${messageId}`), { readBy: updatedReadBy });
+                    }
+                };
+                if(chatArea) chatArea.appendChild(bubble);
+            }
         };
         
         document.addEventListener('DOMContentLoaded', initializeAppSession);
