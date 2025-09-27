@@ -76,8 +76,19 @@
         .status-indicator.inactive { background-color: var(--red-glow); opacity: 0.5; }
         #player-1 .player-symbol { color: var(--x-color); } #player-2 .player-symbol { color: var(--o-color); }
         
-        #board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; width: clamp(280px, 90vw, 420px); flex-shrink: 0; }
-        .cell { aspect-ratio: 1 / 1; background-color: var(--panel-bg); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: clamp(2.5rem, 12vw, 5.5rem); font-weight: 900; cursor: pointer; border: 2px solid rgba(0, 229, 255, 0.5); transition: background-color 0.2s ease; overflow: hidden; }
+        #board { 
+            display: grid; grid-template-columns: repeat(3, 1fr); 
+            gap: 15px; width: clamp(280px, 90vw, 420px);
+            flex-shrink: 0; 
+        }
+        .cell { 
+            aspect-ratio: 1 / 1; background-color: var(--panel-bg); border-radius: 15px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: clamp(2.5rem, 12vw, 5.5rem); 
+            font-weight: 900; cursor: pointer; border: 2px solid rgba(0, 229, 255, 0.5); 
+            transition: background-color 0.2s ease;
+            overflow: hidden; /* THE FIX: Prevents content from expanding the cell */
+        }
         .cell.x { color: var(--x-color); text-shadow: 0 0 20px var(--x-color); }
         .cell.o { color: var(--o-color); text-shadow: 0 0 20px var(--o-color); }
         .cell:not(.x):not(.o):hover { background-color: rgba(0, 229, 255, 0.2); }
@@ -87,7 +98,7 @@
         .modal-content { background: var(--gradient-start); padding: 30px; border-radius: 20px; text-align: center; border: 2px solid var(--o-color); box-shadow: 0 0 25px var(--o-color); width: 100%; max-width: 450px; }
         .modal-content img { width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--o-color); margin-bottom: 15px; }
         #share-modal .modal-content, #rematch-modal .modal-content { max-width: 480px; }
-        #rematch-modal .button-container, #voice-controls .button-container { flex-direction: row; justify-content: center; }
+        #rematch-modal .button-container, #voice-controls { flex-direction: row; justify-content: center; }
         #room-code-display { background: rgba(0,0,0,0.4); border-radius: 10px; padding: 10px; margin-bottom: 15px; }
         #room-code-display p { margin: 0; font-size: 1rem; color: #ccc; }
         #room-code-display h4 { margin: 5px 0 0; font-size: 1.5rem; letter-spacing: 3px; color: var(--o-color); user-select: all; }
@@ -112,7 +123,10 @@
         .voice-message-bubble { background: #442a7c; padding: 10px 15px; border-radius: 15px; display: flex; align-items: center; gap: 10px; margin: 10px auto 0; cursor: pointer; max-width: 150px; }
         .voice-message-bubble svg { width: 20px; height: 20px; fill: var(--o-color); }
         
-        @media (max-width: 480px) { #exit-game-button { width: 35px; height: 35px; } #exit-game-button svg { width: 20px; height: 20px; } }
+        @media (max-width: 767px) { 
+            #game-screen { overflow-y: auto; } 
+            .game-layout { padding-bottom: 50px; } /* Add padding to the bottom */
+        }
         @media (min-width: 768px) { .game-layout { flex-direction: row; align-items: center; } .game-players-container { order: 0; flex-direction: column; width: auto; } }
     </style>
 </head>
@@ -174,7 +188,7 @@
     <div id="winner-modal" class="modal"><div class="modal-content"><img id="winner-avatar"><h2 id="winner-text"></h2><div class="button-container" style="margin-top:20px;"><button class="button" id="play-again-button">لعب مرة أخرى</button><button class="button" id="main-menu-button">القائمة الرئيسية</button></div></div></div>
     <div id="share-modal" class="modal"><div class="modal-content"><h3>دعوة لاعب للانضمام</h3><div id="room-code-display"><p>أو شارك كود الغرفة</p><h4 id="room-id-text"></h4></div><div id="qrcode-container"></div><div id="room-link-container"><span id="room-link-text"></span><button id="copy-link-button" class="button" onclick="copyRoomLink()">نسخ</button></div><p>شارك مباشرة عبر:</p><div id="social-share-buttons"></div><div class="button-container" style="margin-top:20px;"><button class="button" onclick="showModal('share', false)">إغلاق</button></div></div></div>
     <div id="rematch-modal" class="modal"><div class="modal-content"><h2>هل تريد اللعب مرة أخرى؟</h2><p id="rematch-requester-text"></p><div class="button-container"><button class="button" id="rematch-yes-button">نعم</button><button class="button" id="rematch-no-button">لا</button></div></div></div>
-    <div id="voice-chat-modal" class="modal"><div class="modal-content"><h2>إرسال رسالة صوتية</h2><div id="voice-controls"><button class="button" id="record-button">بدء التسجيل</button></div><button class="button" onclick="showModal('voice-chat', false)" style="margin-top:20px;">إلغاء</button></div></div>
+    <div id="voice-chat-modal" class="modal"><div class="modal-content"><h2>إرسال رسالة صوتية</h2><div id="voice-controls" class="button-container"><button class="button" id="record-button">بدء التسجيل</button></div><button class="button" onclick="showModal('voice-chat', false); resetVoiceModal();" style="margin-top:20px;">إلغاء</button></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
@@ -193,6 +207,7 @@
         
         let mediaRecorder;
         let audioChunks = [];
+        let recordedBlob = null;
 
         window.showScreen = (screenName) => {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -365,8 +380,8 @@
                 }
 
                 if (gameData.voiceMessage && gameData.voiceMessage.from !== gameState.player.name) {
-                    displayVoiceMessage(gameData.voiceMessage.data);
-                    update(activeGameRef, { voiceMessage: null }); // Clear message
+                    displayVoiceMessage(gameData.voiceMessage);
+                    update(activeGameRef, { voiceMessage: null }); 
                 }
 
                 if (gameData.winner || gameData.leaver) {
@@ -725,10 +740,8 @@
             }
         };
         
-        // Voice Recording Logic
         const recordButton = document.getElementById('record-button');
         const voiceControls = document.getElementById('voice-controls');
-        let recordedBlob = null;
 
         const startRecording = async () => {
             try {
@@ -738,36 +751,25 @@
                 audioChunks = [];
                 recordButton.textContent = 'إيقاف التسجيل';
                 recordButton.onclick = stopRecording;
-                mediaRecorder.addEventListener("dataavailable", event => {
-                    audioChunks.push(event.data);
+                mediaRecorder.addEventListener("dataavailable", event => { audioChunks.push(event.data); });
+                mediaRecorder.addEventListener("stop", () => {
+                    recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    voiceControls.innerHTML = `<div class="button-container"><button id="send-voice-btn" class="button">✔️</button><button id="cancel-voice-btn" class="button">❌</button></div>`;
+                    document.getElementById('send-voice-btn').onclick = sendVoiceMessage;
+                    document.getElementById('cancel-voice-btn').onclick = resetVoiceModal;
                 });
-            } catch (err) {
-                showToast("لا يمكن الوصول للميكروفون.");
-            }
+            } catch (err) { showToast("لا يمكن الوصول للميكروفون."); }
         };
 
-        const stopRecording = () => {
-            mediaRecorder.stop();
-            recordButton.textContent = 'بدء التسجيل';
-            recordButton.onclick = startRecording;
-            mediaRecorder.addEventListener("stop", () => {
-                recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                voiceControls.innerHTML = `
-                    <div class="button-container">
-                        <button id="send-voice-btn" class="button">✔️</button>
-                        <button id="cancel-voice-btn" class="button">❌</button>
-                    </div>`;
-                document.getElementById('send-voice-btn').onclick = sendVoiceMessage;
-                document.getElementById('cancel-voice-btn').onclick = resetVoiceModal;
-            });
-        };
+        const stopRecording = () => { if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop(); };
 
         const sendVoiceMessage = () => {
             const reader = new FileReader();
             reader.readAsDataURL(recordedBlob);
             reader.onloadend = () => {
                 const base64String = reader.result;
-                update(activeGameRef, { voiceMessage: { from: gameState.player.name, data: base64String } });
+                const timestamp = Date.now();
+                update(activeGameRef, { voiceMessage: { id: timestamp, from: gameState.player.name, data: base64String } });
             };
             resetVoiceModal();
             showModal('voice-chat', false);
@@ -781,22 +783,21 @@
         
         recordButton.onclick = startRecording;
 
-        const displayVoiceMessage = (base64String) => {
-            const opponentPanelId = gameState.player.name === gameState.gameData.p1 ? 'p2-chat-area' : 'p1-chat-area';
-            const chatArea = document.getElementById(opponentPanelId);
-            chatArea.innerHTML = ''; 
+        const displayVoiceMessage = (voiceMessage) => {
+            const chatAreaId = voiceMessage.from === gameState.player.name ? (gameState.player.name === gameState.gameData.p1 ? 'p1-chat-area' : 'p2-chat-area') : (gameState.player.name === gameState.gameData.p1 ? 'p2-chat-area' : 'p1-chat-area');
+            const chatArea = document.getElementById(chatAreaId);
             
-            const audio = new Audio(base64String);
+            const audio = new Audio(voiceMessage.data);
             audio.onloadedmetadata = () => {
                 const duration = Math.round(audio.duration);
                 const bubble = document.createElement('div');
                 bubble.className = 'voice-message-bubble';
-                bubble.innerHTML = `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> <span>رسالة صوتية (${duration} ث)</span>`;
+                bubble.innerHTML = `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> <span>(${duration} ث)</span>`;
                 bubble.onclick = () => audio.play();
                 chatArea.appendChild(bubble);
 
-                showToast(`رسالة صوتية جديدة من ${gameState.gameData.turn}`);
-                setTimeout(() => bubble.remove(), 10000); 
+                if(voiceMessage.from !== gameState.player.name) showToast(`رسالة صوتية جديدة`);
+                setTimeout(() => bubble.remove(), 15000); 
             };
         };
         
