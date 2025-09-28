@@ -101,10 +101,10 @@
         .notification-dot.visible { display: block; }
 
         /* Chat Modal Styles */
-        #chat-modal .modal-content { max-width: 90vw; width: 500px; height: 70vh; display: flex; flex-direction: column; padding: 15px; background: #0f1214; }
+        #chat-modal .modal-content { max-width: 90vw; width: 500px; height: 70vh; display: flex; flex-direction: column; padding: 15px; background: #0f1214; border-radius: 12px; }
         #chat-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.2); }
-        #chat-messages { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; }
-        .message-container { display: flex; margin-bottom: 10px; max-width: 80%; }
+        #chat-messages { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .message-container { display: flex; max-width: 80%; }
         .message-container.sent { align-self: flex-end; }
         .message-container.received { align-self: flex-start; }
         .message-bubble { padding: 8px 12px; border-radius: 8px; position: relative; }
@@ -112,8 +112,10 @@
         .message-container.sent .message-bubble { background-color: var(--sent-bubble-bg); border-top-right-radius: 0; }
         .message-container.received .message-bubble { background-color: var(--received-bubble-bg); border-top-left-radius: 0; }
         .message-sender { font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; color: var(--o-color); }
-        .voice-message-bubble { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .voice-message-bubble svg { width: 24px; height: 24px; fill: var(--o-color); }
+        .voice-message-container { display: flex; align-items: center; gap: 8px; cursor: pointer; min-width: 150px; }
+        .voice-play-button svg { width: 24px; height: 24px; fill: var(--o-color); flex-shrink: 0; }
+        .voice-waveform { flex-grow: 1; display: flex; align-items: center; height: 30px; }
+        .voice-waveform .bar { background-color: rgba(255,255,255,0.6); width: 2px; margin: 0 1px; border-radius: 2px; }
         #chat-input-area { display: flex; gap: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2); }
         #chat-text-input { flex-grow: 1; border-radius: 20px; border: none; padding: 10px 15px; background: rgba(0,0,0,0.3); color: white; font-family: var(--font-family); }
         
@@ -720,7 +722,8 @@
             showModal('chat', true);
             gameState.chat.lastReadTimestamp = Date.now();
             document.getElementById('chat-notification-dot').classList.remove('visible');
-            document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+            const chatMessagesDiv = document.getElementById('chat-messages');
+            chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
         };
         
         const sendChatMessage = () => {
@@ -746,7 +749,6 @@
             if (!messages) return;
 
             const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
-            
             let latestMessage = sortedMessages.length > 0 ? sortedMessages[sortedMessages.length - 1] : null;
 
             sortedMessages.forEach(msg => {
@@ -761,13 +763,14 @@
                 if(msg.type === 'text') {
                     messageContentHTML = `<p>${msg.content}</p>`;
                 } else if(msg.type === 'voice') {
-                    const audio = new Audio(msg.content);
-                    const uniqueId = `voice_msg_${msg.timestamp}`;
-                    messageContentHTML = `<div class="voice-message-bubble" id="${uniqueId}" onclick="playAudio('${msg.content}')">
-                        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg> 
-                        <span id="duration_${uniqueId}">...</span>
-                    </div>`;
-                    audio.onloadedmetadata = () => { document.getElementById(`duration_${uniqueId}`).textContent = `(${Math.round(audio.duration)} ث)`; };
+                    const waveformBars = (msg.waveform || []).map(h => `<div class="bar" style="height: ${h}%;"></div>`).join('');
+                    messageContentHTML = `
+                        <div class="voice-message-container" onclick="playAudio('${msg.content}')">
+                            <div class="voice-play-button">
+                                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg> 
+                            </div>
+                            <div class="voice-waveform">${waveformBars}</div>
+                        </div>`;
                 }
 
                 container.innerHTML = `
@@ -787,10 +790,11 @@
                 document.getElementById('chat-notification-dot').classList.add('visible');
             }
             
-            // In-game notification logic
             if(latestMessage && latestMessage.sender !== gameState.player.name && latestMessage.timestamp > gameState.chat.lastNotifiedTimestamp){
-                gameState.chat.lastNotifiedTimestamp = latestMessage.timestamp;
-                showInGameNotification(latestMessage);
+                if (!document.getElementById('chat-modal').classList.contains('active')) {
+                    gameState.chat.lastNotifiedTimestamp = latestMessage.timestamp;
+                    showInGameNotification(latestMessage);
+                }
             }
         };
         
@@ -834,11 +838,8 @@
         const recordVoiceButton = document.getElementById('record-voice-button');
         
         const toggleRecording = async () => {
-            if(isRecording) {
-                stopRecording();
-            } else {
-                await startRecording();
-            }
+            if(isRecording) stopRecording();
+            else await startRecording();
         };
 
         const startRecording = async () => {
@@ -849,7 +850,7 @@
                 audioChunks = [];
                 isRecording = true;
                 recordVoiceButton.firstElementChild.style.fill = 'var(--red-glow)'; 
-                recordVoiceButton.innerHTML = `<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"></path></svg>`;
+                recordVoiceButton.innerHTML = `<svg viewBox="0 0 24 24" fill="${getComputedStyle(document.documentElement).getPropertyValue('--red-glow')}"><path d="M6 6h12v12H6z"></path></svg>`;
                 
                 mediaRecorder.addEventListener("dataavailable", event => { audioChunks.push(event.data); });
                 mediaRecorder.addEventListener("stop", () => {
@@ -865,10 +866,18 @@
                 mediaRecorder.stop();
                 isRecording = false;
                 recordVoiceButton.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1.2-9.1c0-1.03.83-1.9 1.9-1.9 1.05 0 1.9.87 1.9 1.9l-.01 6.2c0 1.03-.83 1.9-1.9 1.9s-1.9-.87-1.9-1.9V4.9zm6.5 6.1c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"></path></svg>`;
-                recordVoiceButton.firstElementChild.style.fill = 'var(--text-color)';
             }
         };
         
+        const generateWaveform = () => {
+            const bars = 30; // Number of bars in the waveform
+            const waveform = [];
+            for (let i = 0; i < bars; i++) {
+                waveform.push(Math.floor(Math.random() * 80) + 15); // Random height between 15% and 95%
+            }
+            return waveform;
+        };
+
         const sendVoiceMessage = (blob) => {
             const reader = new FileReader();
             reader.readAsDataURL(blob);
@@ -878,6 +887,7 @@
                     type: 'voice',
                     sender: gameState.player.name,
                     content: base64String,
+                    waveform: generateWaveform(),
                     timestamp: Date.now()
                 };
                 const messagesRef = ref(db, `games/${gameState.roomId}/messages`);
@@ -889,7 +899,5 @@
         document.addEventListener('DOMContentLoaded', initializeAppSession);
 
     </script>
-</body>
-</html>    </script>
 </body>
 </html>
