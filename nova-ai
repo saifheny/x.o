@@ -1,0 +1,402 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, Menu, Plus, Settings, Code, Sparkles, User, Bot, Copy, Check, X, MessageSquare, Terminal } from 'lucide-react';
+
+// --- Configuration & Constants ---
+// في تطبيق حقيقي، لا يجب وضع المفاتيح مباشرة في الكود، لكن لغرض التجربة وبناءً على طلبك سأضعها كقيم افتراضية
+const DEFAULT_GROQ_KEY = "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";
+const DEFAULT_HF_KEY = "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";
+
+// أحدث الموديلات المتوفرة عبر Groq (محاكاة لأحدث موديلات 2026)
+const MODELS = {
+  GROQ: "llama-3.3-70b-versatile", // نموذج سريع وقوي جداً
+  HF: "mistralai/Mixtral-8x22B-Instruct-v0.1" // نموذج بديل قوي
+};
+
+// --- Helper Components ---
+
+const CodeBlock = ({ language, code }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="my-4 rounded-lg overflow-hidden border border-gray-700 bg-[#1e1e1e] font-mono text-sm shadow-xl dir-ltr text-left">
+      <div className="flex items-center justify-between px-4 py-2 bg-[#2d2d2d] border-b border-gray-700">
+        <span className="text-gray-400 text-xs uppercase">{language || 'code'}</span>
+        <button 
+          onClick={handleCopy}
+          className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors"
+        >
+          {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+          <span className="text-xs">{copied ? 'تم النسخ' : 'نسخ الكود'}</span>
+        </button>
+      </div>
+      <div className="p-4 overflow-x-auto text-gray-300 whitespace-pre">
+        {code}
+      </div>
+    </div>
+  );
+};
+
+const MessageBubble = ({ role, content }) => {
+  const isUser = role === 'user';
+  
+  // دالة بسيطة لتحليل النصوص واكتشاف الأكواد (Markdown Parser مبسط)
+  const formatContent = (text) => {
+    const parts = text.split(/(```[\s\S]*?```)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('```') && part.endsWith('```')) {
+        const match = part.match(/```(\w*)\n([\s\S]*?)```/);
+        const language = match ? match[1] : '';
+        const code = match ? match[2] : part.slice(3, -3);
+        return <CodeBlock key={index} language={language} code={code} />;
+      }
+      // تحويل الأسطر الجديدة إلى عناصر HTML
+      return (
+        <span key={index} className="whitespace-pre-wrap leading-relaxed">
+          {part}
+        </span>
+      );
+    });
+  };
+
+  return (
+    <div className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} mb-6 group animation-fade-in`}>
+      <div className={`flex max-w-[85%] md:max-w-[75%] gap-4 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+        {/* Avatar */}
+        <div className={`
+          flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg
+          ${isUser ? 'bg-gray-700 text-white' : 'bg-gradient-to-tr from-blue-500 to-purple-600 text-white'}
+        `}>
+          {isUser ? <User size={16} /> : <Sparkles size={16} />}
+        </div>
+
+        {/* Content */}
+        <div className={`
+          flex flex-col
+          ${isUser ? 'items-end' : 'items-start'}
+        `}>
+          <div className={`
+            px-5 py-3.5 rounded-2xl text-[15px] shadow-sm
+            ${isUser 
+              ? 'bg-[#2a2a2a] text-white rounded-tr-sm' 
+              : 'bg-transparent text-gray-100 rounded-tl-sm px-0 py-0'}
+          `}>
+            {isUser ? content : formatContent(content)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Main Application ---
+
+export default function App() {
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [apiKeys, setApiKeys] = useState({ groq: DEFAULT_GROQ_KEY, hf: DEFAULT_HF_KEY });
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage = { role: 'user', content: input };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      // بناء هيكل الرسائل للـ API
+      const apiMessages = [
+        { 
+          role: "system", 
+          content: "أنت مساعد ذكاء اصطناعي متطور جداً من عام 2026. اسمك 'نوفا'. تتحدث اللغة العربية بطلاقة. مهمتك مساعدة المستخدم في البرمجة، التحليل، والإجابة على الأسئلة بأسلوب علمي وأنيق. التنسيق: استخدم Markdown للأكواد والعناوين." 
+        },
+        ...messages.map(m => ({ role: m.role, content: m.content })),
+        { role: "user", content: input }
+      ];
+
+      // استخدام Groq API (الأسرع والأذكى للنصوص)
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKeys.groq}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          messages: apiMessages,
+          model: MODELS.GROQ,
+          temperature: 0.7,
+          max_tokens: 4096,
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error.message || "حدث خطأ في الاتصال");
+      }
+
+      const aiContent = data.choices[0].message.content;
+      setMessages(prev => [...prev, { role: 'assistant', content: aiContent }]);
+
+    } catch (error) {
+      console.error("Error:", error);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `⚠️ عذراً، حدث خطأ أثناء الاتصال بالخادم. يرجى التأكد من مفاتيح الـ API في الإعدادات.\n\nالخطأ: ${error.message}` 
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-[#0f0f0f] text-gray-100 font-sans overflow-hidden" dir="rtl">
+      
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={`
+        fixed md:relative z-50 h-full w-[280px] bg-[#1a1a1a] flex flex-col transition-transform duration-300 border-l border-gray-800
+        ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+      `}>
+        <div className="p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-800 p-2 rounded-lg transition-colors" onClick={() => setMessages([])}>
+            <Plus size={20} className="text-gray-400" />
+            <span className="font-medium text-sm">محادثة جديدة</span>
+          </div>
+          <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-gray-400 p-2">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-2 py-2">
+          <div className="text-xs font-semibold text-gray-500 mb-3 px-2">الأخيرة</div>
+          <button className="w-full flex items-center gap-3 px-3 py-3 text-sm text-gray-300 hover:bg-[#2a2a2a] rounded-full transition-all text-right group">
+            <MessageSquare size={16} className="text-blue-400 group-hover:text-blue-300" />
+            <span className="truncate">تحليل كود بايثون</span>
+          </button>
+          <button className="w-full flex items-center gap-3 px-3 py-3 text-sm text-gray-300 hover:bg-[#2a2a2a] rounded-full transition-all text-right group">
+            <Terminal size={16} className="text-purple-400 group-hover:text-purple-300" />
+            <span className="truncate">مشروع React 2026</span>
+          </button>
+        </div>
+
+        <div className="p-4 border-t border-gray-800">
+          <button 
+            onClick={() => setShowSettings(!showSettings)}
+            className="flex items-center gap-3 text-sm text-gray-400 hover:text-white transition-colors w-full p-2 hover:bg-gray-800 rounded-lg"
+          >
+            <Settings size={18} />
+            <span>الإعدادات والمفاتيح</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col h-full relative">
+        {/* Header */}
+        <header className="h-16 flex items-center justify-between px-4 md:px-6 absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-[#0f0f0f] to-transparent">
+          <div className="flex items-center gap-3">
+             <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 text-gray-400 hover:text-white"
+            >
+              <Menu size={24} />
+            </button>
+            <span className="text-xl font-semibold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent flex items-center gap-2">
+              Nova AI <span className="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded-full border border-gray-700">v4.0 (2026)</span>
+            </span>
+          </div>
+        </header>
+
+        {/* Chat Area */}
+        <main className="flex-1 overflow-y-auto pt-20 pb-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+          {messages.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center px-4 animate-fade-in-up">
+              <div className="w-20 h-20 mb-6 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-purple-900/20">
+                <Sparkles size={40} className="text-white" />
+              </div>
+              <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+                مرحباً بك
+              </h1>
+              <p className="text-xl text-gray-400 max-w-lg mb-8">
+                كيف يمكنني مساعدتك اليوم؟ يمكنني كتابة الأكواد، تحليل البيانات، أو الإجابة على أسئلتك المعقدة.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl w-full text-right dir-rtl">
+                <button onClick={() => setInput("اكتب لي كود لإنشاء لعبة ثعبان بلغة Python")} className="p-4 bg-[#1e1e1e] hover:bg-[#2a2a2a] border border-gray-800 rounded-xl transition-all text-sm text-gray-300 hover:border-gray-600">
+                  <span className="block font-semibold text-blue-400 mb-1">🐍 برمجة</span>
+                  اكتب لي كود لعبة Snake بلغة Python
+                </button>
+                <button onClick={() => setInput("ما هي أهم التطورات في الذكاء الاصطناعي في 2026؟")} className="p-4 bg-[#1e1e1e] hover:bg-[#2a2a2a] border border-gray-800 rounded-xl transition-all text-sm text-gray-300 hover:border-gray-600">
+                  <span className="block font-semibold text-purple-400 mb-1">🧠 معرفة</span>
+                  ما الجديد في عالم الـ AI لعام 2026؟
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="max-w-3xl mx-auto px-4 py-4 min-h-0">
+              {messages.map((msg, idx) => (
+                <MessageBubble key={idx} role={msg.role} content={msg.content} />
+              ))}
+              {isLoading && (
+                <div className="flex items-start gap-4 animate-pulse">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center">
+                    <Sparkles size={16} className="text-white animate-spin-slow" />
+                  </div>
+                  <div className="flex gap-1 mt-3">
+                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-75"></div>
+                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-150"></div>
+                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-300"></div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </main>
+
+        {/* Input Area */}
+        <div className="p-4 bg-[#0f0f0f]">
+          <div className="max-w-3xl mx-auto relative group">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl opacity-20 group-hover:opacity-40 transition duration-500 blur"></div>
+            <div className="relative flex items-end gap-2 bg-[#1e1e1e] rounded-2xl p-2 border border-gray-700 shadow-2xl">
+              <button className="p-3 text-gray-400 hover:text-white hover:bg-gray-700 rounded-full transition-colors hidden md:block">
+                <Plus size={20} />
+              </button>
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="اسألني عن أي شيء..."
+                className="w-full bg-transparent text-white placeholder-gray-500 resize-none py-3 px-2 max-h-32 min-h-[50px] focus:outline-none scrollbar-hide text-base leading-6"
+                rows={1}
+                style={{ height: 'auto', minHeight: '52px' }}
+              />
+              <button 
+                onClick={handleSend}
+                disabled={!input.trim() || isLoading}
+                className={`
+                  p-3 rounded-xl transition-all duration-300
+                  ${input.trim() && !isLoading 
+                    ? 'bg-white text-black hover:bg-gray-200 rotate-0 scale-100' 
+                    : 'bg-gray-800 text-gray-500 cursor-not-allowed rotate-90 scale-90'}
+                `}
+              >
+                {isLoading ? <div className="w-5 h-5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div> : <Send size={20} />}
+              </button>
+            </div>
+            <div className="text-center mt-2 text-xs text-gray-500">
+              Nova AI يمكن أن يرتكب أخطاء. يرجى التحقق من المعلومات المهمة.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-[#1e1e1e] w-full max-w-md rounded-2xl border border-gray-700 p-6 shadow-2xl animate-scale-in">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Settings size={20} className="text-blue-400" />
+                إعدادات المحرك
+              </h2>
+              <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-white">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Groq API Key (موصى به للسرعة)</label>
+                <input 
+                  type="password" 
+                  value={apiKeys.groq}
+                  onChange={(e) => setApiKeys({...apiKeys, groq: e.target.value})}
+                  className="w-full bg-[#2a2a2a] border border-gray-700 rounded-lg p-3 text-sm text-white focus:border-blue-500 focus:outline-none transition-colors dir-ltr"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Hugging Face API Key</label>
+                <input 
+                  type="password" 
+                  value={apiKeys.hf}
+                  onChange={(e) => setApiKeys({...apiKeys, hf: e.target.value})}
+                  className="w-full bg-[#2a2a2a] border border-gray-700 rounded-lg p-3 text-sm text-white focus:border-purple-500 focus:outline-none transition-colors dir-ltr"
+                />
+              </div>
+              <div className="pt-4 text-xs text-gray-500 leading-relaxed">
+                يستخدم النظام حالياً نموذج <span className="text-blue-400 font-mono">llama-3.3-70b-versatile</span> عبر Groq للحصول على أداء فائق السرعة يشبه 2026.
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setShowSettings(false)}
+              className="w-full mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-medium py-3 rounded-xl transition-all"
+            >
+              حفظ وإغلاق
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Global CSS needed for animations and scrollbars */}
+      <style>{`
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+        .animate-scale-in { animation: scaleIn 0.2s ease-out forwards; }
+        
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+
+        .dir-rtl { direction: rtl; }
+        .dir-ltr { direction: ltr; }
+      `}</style>
+    </div>
+  );
+}
+
