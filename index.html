@@ -37,7 +37,7 @@
         *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         html, body {
             height: 100%;
-            overscroll-behavior-y: none; /* Prevents black screen/rubber band effect on mobile */
+            overscroll-behavior-y: none;
         }
         body {
             font-family: var(--font-main);
@@ -270,8 +270,22 @@
         .mini-frame { width: 40px; height: 40px; font-size: 1.2rem; margin: 0; border-width: 1px; }
 
         /* Dardasha Styles */
+        .chat-section-container {
+            padding-top: calc(var(--nav-height) + 10px) !important;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
         .chat-layout {
-            display: flex; height: calc(100vh - 80px); background: #000; position: relative; overflow: hidden;
+            display: flex; 
+            flex: 1;
+            background: #000; 
+            position: relative; 
+            overflow: hidden;
+            margin-bottom: 10px;
         }
         .chat-sidebar {
             width: 100%; height: 100%; background: #111; border-left: 1px solid #333; display: flex; flex-direction: column;
@@ -280,12 +294,6 @@
         /* MOBILE CHAT FIX - FULL SCREEN */
         @media (max-width: 768px) {
             .chat-layout {
-                position: fixed;
-                inset: 0;
-                z-index: 2000;
-                background: #000;
-                height: 100%;
-                width: 100%;
                 margin: 0;
                 border: none;
                 border-radius: 0;
@@ -305,17 +313,17 @@
                 height: 100%;
                 width: 100%;
             }
-            .portal-container {
-                padding: 0; /* Remove padding when in chat mode on mobile */
+            .chat-section-container {
+                 padding-left: 0; padding-right: 0;
             }
         }
 
-        @media (min-width: 768px) { .chat-sidebar { width: 350px; flex-shrink: 0; } .chat-layout { border: 1px solid #333; border-radius: 20px; margin-top: 10px; } }
+        @media (min-width: 768px) { .chat-sidebar { width: 350px; flex-shrink: 0; } .chat-layout { border: 1px solid #333; border-radius: 20px; margin-top: 5px; } }
         .chat-sidebar-header {
             padding: 15px; background: #181818; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222;
         }
         .my-chat-info { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .chat-search-bar { padding: 10px; background: #111; border-bottom: 1px solid #222; position: relative; }
+        .chat-search-bar { padding: 10px; background: #111; border-bottom: 1px solid #222; position: relative; display: flex; gap: 8px;}
         .chat-search-bar input { width: 100%; background: #202020; border: none; padding: 10px 40px 10px 15px; border-radius: 12px; color: #fff; transition: all 0.3s ease; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); }
         .chat-search-bar input:focus {
             background: #000;
@@ -323,7 +331,7 @@
             box-shadow: 0 0 15px rgba(59, 130, 246, 0.4), inset 0 1px 1px rgba(0,0,0,0.5);
             transform: scale(1.01);
         }
-        .chat-search-bar i { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #666; pointer-events: none;}
+        .chat-search-bar i.search-icon-inside { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #666; pointer-events: none;}
         .chat-list { flex: 1; overflow-y: auto; }
         .chat-item {
             display: flex; padding: 12px; gap: 12px; cursor: pointer; transition: 0.2s; border-bottom: 1px solid #1a1a1a;
@@ -349,6 +357,40 @@
         .copy-box { background: #111; padding: 10px; border: 1px dashed #444; border-radius: 8px; margin-top: 5px; font-family: monospace; color: var(--accent-primary); cursor: pointer; }
 
         /* End Dardasha */
+        
+        /* New Magic Search Button */
+        .magic-search-btn {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 40px; /* Match input height roughly */
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: pulse-glow 2s infinite;
+        }
+
+        .magic-search-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.6);
+            background: linear-gradient(135deg, #4f46e5, #9333ea);
+        }
+
+        .magic-search-btn:active {
+            transform: scale(0.95);
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(168, 85, 247, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
+        }
+
 
         .reese-input-trigger {
             background: linear-gradient(135deg, #181818, #101010);
@@ -748,7 +790,8 @@
         <div class="construction-sub">جاري بناء وتجهيز البيانات</div>
     </div>
 
-    <div id="landing-layer">
+    <!-- Hidden by default to prevent flash -->
+    <div id="landing-layer" class="hidden">
         <div class="landing-wrap">
             <h1 style="font-size: 3.5rem; background: linear-gradient(to right, #fff, #3b82f6); -webkit-background-clip: text; color: transparent; margin: 0; text-shadow: 0 0 30px rgba(59, 130, 246, 0.5);">SA EDU</h1>
             <div style="min-height: 40px; margin-top: 10px; display:flex; justify-content:center; align-items:center; gap:5px;">
@@ -847,7 +890,10 @@
             </section>
 
             <!-- T-Dardasha Section -->
-            <section id="t-dardasha" class="app-section hidden" style="padding: 0; max-width: 100%;">
+            <section id="t-dardasha" class="app-section hidden chat-section-container">
+                <!-- NEW BACK BUTTON ADDED HERE -->
+                <div class="back-btn-header" style="margin: 0 15px 10px;" onclick="switchTab('t-library')"><i class="fas fa-arrow-right"></i> الرئيسية</div>
+                
                 <div class="chat-layout">
                     <div class="chat-sidebar" id="t-chat-sidebar">
                         <div class="chat-sidebar-header">
@@ -858,7 +904,7 @@
                             <button class="icon-btn-small" onclick="toggleUserSearchModal()"><i class="fas fa-plus"></i></button>
                         </div>
                         <div class="chat-search-bar">
-                            <i class="fas fa-search"></i>
+                            <i class="fas fa-search search-icon-inside"></i>
                             <input type="text" placeholder="بحث في المحادثات..." onkeyup="filterChats('t', this.value)">
                         </div>
                         <div class="chat-list" id="t-chat-list"></div>
@@ -1030,7 +1076,10 @@
             </section>
 
             <!-- S-Dardasha Section -->
-            <section id="s-dardasha" class="app-section hidden" style="padding: 0; max-width: 100%;">
+            <section id="s-dardasha" class="app-section hidden chat-section-container">
+                <!-- NEW BACK BUTTON ADDED HERE -->
+                <div class="back-btn-header" style="margin: 0 15px 10px;" onclick="switchTab('s-exams')"><i class="fas fa-arrow-right"></i> الرئيسية</div>
+                
                 <div class="chat-layout">
                     <div class="chat-sidebar" id="s-chat-sidebar">
                         <div class="chat-sidebar-header">
@@ -1041,7 +1090,7 @@
                             <button class="icon-btn-small" onclick="toggleUserSearchModal()"><i class="fas fa-plus"></i></button>
                         </div>
                         <div class="chat-search-bar">
-                            <i class="fas fa-search"></i>
+                            <i class="fas fa-search search-icon-inside"></i>
                             <input type="text" placeholder="بحث في المحادثات..." onkeyup="filterChats('s', this.value)">
                         </div>
                         <div class="chat-list" id="s-chat-list"></div>
@@ -1218,7 +1267,10 @@
             
             <div class="chat-search-bar" style="margin-bottom:20px;">
                 <input type="text" id="user-search-id-input" placeholder="أدخل معرف المستخدم (ID)...">
-                <button onclick="searchUserById()" class="modern-btn" style="width:auto; min-width:60px;"><i class="fas fa-search"></i></button>
+                <!-- NEW ELECTRIC BUTTON -->
+                <button onclick="searchUserById()" class="magic-search-btn" title="بحث سريع">
+                    <i class="fas fa-bolt"></i>
+                </button>
             </div>
             <div id="user-search-result"></div>
         </div>
@@ -2940,9 +2992,12 @@
         const savedUser = localStorage.getItem('sa_user'); const savedRole = localStorage.getItem('sa_role'); const savedIcon = localStorage.getItem('sa_icon'); const savedUid = localStorage.getItem('sa_uid');
         if (savedUser && savedRole) {
             currentUser = savedUser; selectedRole = savedRole; myUid = savedUid;
-            document.getElementById('landing-layer').classList.add('hidden');
+            document.getElementById('landing-layer').classList.add('hidden'); // Ensure hidden if logged in
             loginSuccess(currentUser, savedIcon, savedUid);
-        } else { document.getElementById('landing-layer').classList.remove('hidden'); }
+        } else { 
+            // Only remove hidden if NOT logged in, prevents flash
+            document.getElementById('landing-layer').classList.remove('hidden'); 
+        }
 
         let deferredPrompt;
         const pwaBanner = document.getElementById('pwa-install-banner');
