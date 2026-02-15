@@ -16,17 +16,23 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // الإعدادات
-const ADMIN_PIN = "2024";
+const ADMIN_PIN = "2024"; // الرمز السري للمدير
 const WA_PHONE = "201202687082";
 const SHIPPING_COST = 50;
 
-// بيانات المحافظات
 const governorates = [
     "القاهرة", "الجيزة", "الإسكندرية", "الدقهلية", "الشرقية", "المنوفية", 
     "القليوبية", "البحيرة", "الغربية", "بور سعيد", "دمياط", "الإسماعيلية", 
     "السويس", "كفر الشيخ", "الفيوم", "بني سويف", "المنيا", "أسيوط", 
     "سوهاج", "قنا", "الأقصر", "أسوان", "البحر الأحمر", "الوادي الجديد", 
     "مطروح", "شمال سيناء", "جنوب سيناء"
+];
+
+// ألوان النظام (للمدير عند الإضافة)
+const systemColors = [
+    '#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF', 
+    '#FFFF00', '#800080', '#FFA500', '#A52A2A', '#808080', 
+    '#D4AF37', '#FFC0CB', '#40E0D0', '#000080'
 ];
 
 const colorNames = {
@@ -40,25 +46,23 @@ const colorNames = {
 let cart = JSON.parse(localStorage.getItem('athar_cart')) || [];
 let productsCache = [];
 let slideIntervals = {}; 
-// حالة المدير (تخزين بسيط في الجلسة)
 let isAdmin = sessionStorage.getItem('isAdmin') === 'true';
+let selectedColorsForNewProduct = []; // لتخزين الألوان المختارة عند الإضافة
 
 // --- التوجيه (Router) ---
 window.router = function(route, param = null) {
     const header = document.getElementById('main-header');
     
-    // تنظيف الموقتات
     Object.values(slideIntervals).forEach(clearInterval);
     slideIntervals = {};
-    
     window.scrollTo(0,0);
-    updateAdminUI(); // تحديث أيقونات الهيدر
+    updateAdminUI();
 
     if(route === 'home') {
         header.style.display = 'flex';
         renderHome();
     } else if (route === 'product') {
-        header.style.display = 'none'; // إخفاء الهيدر في صفحة المنتج كما طلبت
+        header.style.display = 'none'; 
         renderProductPage(param);
     } else if (route === 'cart') {
         header.style.display = 'flex';
@@ -68,18 +72,13 @@ window.router = function(route, param = null) {
         renderAdminLogin();
     } else if (route === 'admin-add') {
         header.style.display = 'none';
-        renderAddProductPage(param); // param might be ID for edit
+        renderAddProductPage(param); 
     }
 }
 
-// --- تحديث واجهة المدير ---
 function updateAdminUI() {
     const addBtn = document.getElementById('admin-add-btn');
-    if(isAdmin) {
-        addBtn.classList.remove('hidden');
-    } else {
-        addBtn.classList.add('hidden');
-    }
+    addBtn.classList.toggle('hidden', !isAdmin);
 }
 
 // --- الرئيسية ---
@@ -96,8 +95,9 @@ async function renderHome() {
         productsCache.forEach(p => {
             const images = p.images || [p.imageCode];
             const imgId = `img-${p.id}`;
-            
-            // أزرار التحكم للمدير فقط
+            const oldPriceHtml = p.oldPrice ? `<span class="old-price-tag">${p.oldPrice}</span>` : '';
+
+            // أزرار التحكم
             let adminControls = '';
             if(isAdmin) {
                 adminControls = `
@@ -122,11 +122,13 @@ async function renderHome() {
                     </div>
                     <div class="product-info">
                         <div class="product-title">${p.title}</div>
+                        <div style="font-size:0.8rem; color:#666;">
+                            ${oldPriceHtml} 
+                        </div>
                     </div>
                 </div>
             `;
             
-            // تقليب الصور
             if(images.length > 1) {
                 let idx = 0;
                 slideIntervals[p.id] = setInterval(() => {
@@ -147,20 +149,20 @@ async function renderHome() {
     } catch(e) { console.error(e); }
 }
 
-// --- صفحة المنتج (تفاصيل) ---
+// --- صفحة المنتج ---
 window.renderProductPage = (id) => {
     const p = productsCache.find(x => x.id === id);
     if(!p) return router('home');
     const images = p.images || [p.imageCode];
     const appDiv = document.getElementById('app');
 
-    // ألوان
+    // الألوان
     let colorsHtml = '';
     if(p.colors && p.colors.length) {
         colorsHtml = `
             <div style="margin:15px 0;">
-                <div style="margin-bottom:8px; font-weight:bold;">اللون المتاح:</div>
-                <div style="display:flex; gap:10px;">
+                <div style="margin-bottom:8px; font-weight:bold;">اللون:</div>
+                <div class="color-select-row">
                     ${p.colors.map((c, i) => 
                         `<div class="color-circle ${i===0?'active':''}" style="background:${c}" onclick="selectColor(this, '${c}')"></div>`
                     ).join('')}
@@ -170,7 +172,6 @@ window.renderProductPage = (id) => {
         `;
     }
 
-    // صور مصغرة
     let thumbsHtml = '';
     if(images.length > 1) {
         thumbsHtml = `<div class="thumbnails-row">
@@ -180,9 +181,11 @@ window.renderProductPage = (id) => {
         </div>`;
     }
 
+    const oldPriceHtml = p.oldPrice ? `<span class="info-old-price">${p.oldPrice} ج.م</span>` : '';
+
     appDiv.innerHTML = `
         <div class="full-page-view">
-            <div style="padding:15px;">
+            <div style="padding:10px 15px;">
                 <button class="icon-btn" onclick="router('home')"><i class="fas fa-arrow-right"></i></button>
             </div>
             
@@ -195,23 +198,26 @@ window.renderProductPage = (id) => {
                 </div>
 
                 <div class="info-section">
-                    <h1>${p.title}</h1>
-                    <div class="info-price">${p.price} ج.م</div>
-                    <div class="info-desc">${p.description || 'لا يوجد وصف'}</div>
+                    <h1 style="font-size:1.4rem; margin-bottom:10px;">${p.title}</h1>
+                    <div class="info-price-row">
+                        <span class="info-price">${p.price} ج.م</span>
+                        ${oldPriceHtml}
+                    </div>
+                    <p style="color:#666; line-height:1.6; margin-bottom:20px; font-size:0.95rem;">${p.description || 'لا يوجد وصف'}</p>
                     
                     ${colorsHtml}
 
                     <div style="display:flex; align-items:center; gap:15px; margin:20px 0;">
                         <span style="font-weight:bold;">الكمية:</span>
-                        <div class="cart-controls">
-                            <button class="qty-btn" onclick="updQty(-1)">-</button>
-                            <span id="qty-val" style="width:20px; text-align:center;">1</span>
-                            <button class="qty-btn" onclick="updQty(1)">+</button>
+                        <div style="background:#f1f5f9; padding:5px; border-radius:8px; display:flex; gap:10px;">
+                            <button class="qty-btn" onclick="updQty(-1)" style="border:none; background:white; width:30px; height:30px; border-radius:6px; cursor:pointer;">-</button>
+                            <span id="qty-val" style="width:20px; text-align:center; line-height:30px;">1</span>
+                            <button class="qty-btn" onclick="updQty(1)" style="border:none; background:white; width:30px; height:30px; border-radius:6px; cursor:pointer;">+</button>
                         </div>
                     </div>
 
                     <button class="btn-primary" onclick="addToCart('${p.id}')">
-                        <i class="fas fa-cart-plus"></i> إضافة للسلة
+                        إضافة للسلة
                     </button>
                 </div>
             </div>
@@ -224,13 +230,11 @@ window.changeMainImage = (src, el) => {
     document.querySelectorAll('.thumb-img').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
 }
-
 window.selectColor = (el, c) => {
     document.querySelectorAll('.color-circle').forEach(x => x.classList.remove('active'));
     el.classList.add('active');
     document.getElementById('sel-color').value = c;
 }
-
 window.updQty = (n) => {
     let el = document.getElementById('qty-val');
     let v = parseInt(el.innerText) + n;
@@ -242,7 +246,7 @@ window.updQty = (n) => {
 window.addToCart = (id) => {
     const p = productsCache.find(x => x.id === id);
     const qty = parseInt(document.getElementById('qty-val').innerText);
-    const color = document.getElementById('sel-color')?.value || '#000';
+    const color = document.getElementById('sel-color')?.value || (p.colors?.[0] || '#000');
     
     const exist = cart.find(i => i.id === id && i.color === color);
     if(exist) exist.qty += qty;
@@ -256,11 +260,10 @@ window.addToCart = (id) => {
 window.renderCartPage = () => {
     const appDiv = document.getElementById('app');
     
-    // منع الفراغ العلوي: الكلاس cart-page-container له padding مناسب
     if(!cart.length) {
         appDiv.innerHTML = `
         <div class="cart-page-container" style="text-align:center; padding-top:50px;">
-            <i class="fas fa-shopping-basket fa-3x" style="color:#eee; margin-bottom:20px;"></i>
+            <i class="fas fa-shopping-bag fa-3x" style="color:#eee; margin-bottom:20px;"></i>
             <h3>السلة فارغة</h3>
             <button class="btn-sec" onclick="router('home')">تسوق الآن</button>
         </div>`;
@@ -272,60 +275,48 @@ window.renderCartPage = () => {
         total += item.price * item.qty;
         return `
             <div class="cart-item">
-                <img src="${item.img}" style="width:70px; height:70px; border-radius:8px; object-fit:cover;">
+                <img src="${item.img}" style="width:60px; height:60px; border-radius:8px; object-fit:cover;">
                 <div style="flex:1;">
                     <div style="font-weight:bold; font-size:0.9rem;">${item.title}</div>
-                    <div style="font-size:0.8rem; color:#666; margin:4px 0;">
-                        اللون: ${colorNames[item.color] || 'لون'} 
+                    <div style="font-size:0.8rem; color:#666; margin:2px 0;">
+                        ${colorNames[item.color] || 'لون'} 
                         <span onclick="editColorCart(${i})" style="color:var(--primary); cursor:pointer; font-weight:bold;">(تعديل)</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight:bold; color:var(--primary);">${item.price} ج.م</span>
+                        <span style="font-weight:bold; color:var(--primary); font-size:0.9rem;">${item.price} ج.م</span>
                         
-                        <div class="cart-controls">
-                            <button class="qty-btn" onclick="updateCartItemQty(${i}, -1)">-</button>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <button onclick="updateCartItemQty(${i}, -1)" style="border:1px solid #ddd; background:white; width:24px; height:24px; border-radius:4px; cursor:pointer;">-</button>
                             <span style="font-size:0.9rem;">${item.qty}</span>
-                            <button class="qty-btn" onclick="updateCartItemQty(${i}, 1)">+</button>
+                            <button onclick="updateCartItemQty(${i}, 1)" style="border:1px solid #ddd; background:white; width:24px; height:24px; border-radius:4px; cursor:pointer;">+</button>
                         </div>
                     </div>
                 </div>
-                <button onclick="remCart(${i})" style="border:none; background:none; color:#ef4444; cursor:pointer; align-self:center;">
+                <button onclick="remCart(${i})" style="border:none; background:none; color:#ef4444; cursor:pointer;">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
         `;
     }).join('');
 
-    // خيارات المحافظات
     const govOptions = governorates.map(g => `<option value="${g}">${g}</option>`).join('');
 
     appDiv.innerHTML = `
         <div class="cart-page-container">
-            <h2 style="margin-bottom:20px;">مراجعة الطلب</h2>
-            
-            <div style="margin-bottom:30px;">
-                ${items}
-            </div>
+            <h2 style="margin-bottom:15px; font-size:1.2rem;">مراجعة الطلب</h2>
+            <div style="margin-bottom:20px;">${items}</div>
 
-            <div style="background:#f9f9f9; padding:20px; border-radius:12px; margin-bottom:20px;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                    <span>مجموع المنتجات</span><span>${total} ج.م</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                    <span>الشحن</span><span>${SHIPPING_COST} ج.م</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.2rem; border-top:1px solid #ddd; padding-top:10px;">
+            <div style="background:#f9f9f9; padding:15px; border-radius:12px; margin-bottom:20px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>المجموع</span><span>${total} ج.م</span></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>الشحن</span><span>${SHIPPING_COST} ج.م</span></div>
+                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.1rem; border-top:1px solid #ddd; padding-top:10px;">
                     <span>الإجمالي</span><span>${total+SHIPPING_COST} ج.م</span>
                 </div>
             </div>
 
-            <h3 style="margin-bottom:15px;">بيانات الشحن</h3>
-            <div class="form-group">
-                <input id="c-name" class="form-input" placeholder="الاسم ثلاثي" required>
-            </div>
-            <div class="form-group">
-                <input id="c-phone" type="tel" class="form-input" placeholder="رقم واتساب" required>
-            </div>
+            <h3 style="margin-bottom:10px; font-size:1.1rem;">بيانات الشحن</h3>
+            <div class="form-group"><input id="c-name" class="form-input" placeholder="الاسم ثلاثي" required></div>
+            <div class="form-group"><input id="c-phone" type="tel" class="form-input" placeholder="رقم واتساب" required></div>
             <div class="form-group">
                 <select id="c-gov" class="form-select">
                     <option value="" disabled selected>اختر المحافظة</option>
@@ -345,7 +336,6 @@ window.renderCartPage = () => {
 }
 
 window.updateCartItemQty = (i, change) => {
-    // تقليل الكمية لا يحذف المنتج إلا إذا ضغط زر الحذف، لكن لا يقل عن 1
     let newQty = cart[i].qty + change;
     if(newQty >= 1) {
         cart[i].qty = newQty;
@@ -362,21 +352,16 @@ window.sendWA = (total) => {
     const city = document.getElementById('c-city').value;
     const area = document.getElementById('c-area').value;
 
-    if(!name || !phone || !gov || !city || !area) {
-        showToast("يرجى إكمال جميع البيانات");
-        return;
-    }
+    if(!name || !phone || !gov || !city || !area) return showToast("أكمل البيانات");
 
-    let msg = `*طلب جديد - أثر*\n`;
+    let msg = `*طلب جديد - Athar*\n`;
     msg += `👤 الاسم: ${name}\n`;
     msg += `📱 رقم: ${phone}\n`;
     msg += `📍 العنوان: ${gov} - ${city} - ${area}\n`;
     msg += `----------------\n`;
-    
     cart.forEach(i => {
         msg += `- ${i.title} (${colorNames[i.color] || 'لون'}) عدد ${i.qty}\n`;
     });
-    
     msg += `----------------\n`;
     msg += `*الإجمالي: ${total} ج.م*`;
 
@@ -389,87 +374,110 @@ window.sendWA = (total) => {
 
 // --- نظام المدير ---
 window.checkAdminAccess = () => {
-    if(isAdmin) {
-        // لو هو مسجل بالفعل، وديه لوحة الإضافة أو الرئيسية
-        router('admin-add');
-    } else {
-        router('admin-login');
-    }
+    if(isAdmin) router('admin-add'); // لو مدير يروح يضيف
+    else router('admin-login');
 }
 
 window.renderAdminLogin = () => {
     document.getElementById('app').innerHTML = `
-        <div style="height:80vh; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:20px;">
-            <h3>دخول الإدارة</h3>
-            <input type="password" id="admin-pin" class="form-input" style="text-align:center; max-width:200px; margin:20px 0;" placeholder="الرمز السري">
-            <button class="btn-primary" style="max-width:200px;" onclick="verifyPin()">دخول</button>
-            <button class="btn-sec" onclick="router('home')">رجوع</button>
+        <div class="login-wrapper">
+            <div class="login-card">
+                <i class="fas fa-user-shield login-icon"></i>
+                <h3 style="margin-bottom:20px;">لوحة المدير</h3>
+                <input type="password" id="admin-pin" class="form-input" style="text-align:center; margin-bottom:15px;" placeholder="الرمز السري">
+                <button class="btn-primary" onclick="verifyPin()">دخول</button>
+                <button class="btn-sec" onclick="router('home')">رجوع للمتجر</button>
+            </div>
         </div>
     `;
 }
 
 window.verifyPin = () => {
-    const pin = document.getElementById('admin-pin').value;
-    if(pin === ADMIN_PIN) {
+    if(document.getElementById('admin-pin').value === ADMIN_PIN) {
         isAdmin = true;
         sessionStorage.setItem('isAdmin', 'true');
-        showToast("مرحباً بك يا مدير");
-        router('home'); // نرجع للرئيسية عشان نشوف أزرار التحكم
+        showToast("مرحباً بك!");
+        router('home');
     } else {
         showToast("رمز خاطئ");
     }
 }
 
-// صفحة إضافة/تعديل منتج (الآن مدمجة)
+// إضافة / تعديل منتج
 window.renderAddProductPage = (editId = null) => {
     const appDiv = document.getElementById('app');
-    let data = { title: '', price: '', description: '' };
-    let formTitle = "إضافة منتج جديد";
+    let data = { title: '', price: '', oldPrice: '', description: '', colors: [] };
+    let formTitle = "إضافة منتج";
+    selectedColorsForNewProduct = [];
 
     if(editId) {
         const p = productsCache.find(x => x.id === editId);
-        if(p) data = p;
+        if(p) {
+            data = p;
+            selectedColorsForNewProduct = p.colors || [];
+        }
         formTitle = "تعديل منتج";
+    } else {
+        selectedColorsForNewProduct = ['#000000', '#FFFFFF']; // ألوان افتراضية
     }
 
     appDiv.innerHTML = `
         <div style="padding:20px; max-width:600px; margin:0 auto;">
-            <button class="btn-sec" style="margin-bottom:20px;" onclick="router('home')">عودة للرئيسية</button>
-            
-            <div style="background:white; padding:20px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.05);">
+            <button class="btn-sec" style="margin-bottom:15px;" onclick="router('home')">عودة للرئيسية</button>
+            <div style="background:white; padding:20px; border-radius:12px; box-shadow:0 5px 20px rgba(0,0,0,0.05);">
                 <h3 style="margin-bottom:20px;">${formTitle}</h3>
                 <form id="prod-form">
                     <div class="form-group">
                         <label>اسم المنتج</label>
                         <input id="p-title" class="form-input" value="${data.title}" required>
                     </div>
-                    <div class="form-group">
-                        <label>السعر</label>
-                        <input id="p-price" type="number" class="form-input" value="${data.price}" required>
+                    <div class="form-group" style="display:flex; gap:10px;">
+                        <div style="flex:1">
+                            <label>السعر الحالي</label>
+                            <input id="p-price" type="number" class="form-input" value="${data.price}" required>
+                        </div>
+                        <div style="flex:1">
+                            <label>السعر قبل الخصم (اختياري)</label>
+                            <input id="p-old-price" type="number" class="form-input" value="${data.oldPrice || ''}">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>الوصف</label>
-                        <textarea id="p-desc" class="form-input" style="height:100px;">${data.description || ''}</textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>الصور (يمكن اختيار أكثر من صورة)</label>
-                        <input type="file" id="p-imgs" multiple accept="image/*" class="form-input">
-                        ${editId ? '<small style="color:red">اترك الصور فارغة للإبقاء على الصور القديمة</small>' : ''}
+                        <textarea id="p-desc" class="form-input" style="height:80px;">${data.description || ''}</textarea>
                     </div>
                     
-                    <button type="submit" id="save-btn" class="btn-primary">حفظ البيانات</button>
+                    <div class="form-group">
+                        <label>الألوان المتاحة:</label>
+                        <div id="new-prod-colors" style="display:flex; gap:5px; flex-wrap:wrap; margin:5px 0;"></div>
+                        <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
+                            <small>أضف لون:</small>
+                            <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                                ${systemColors.map(c => `<div class="color-circle" style="background:${c}; width:25px; height:25px;" onclick="addColToNew('${c}')"></div>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>الصور</label>
+                        <input type="file" id="p-imgs" multiple accept="image/*" class="form-input">
+                        ${editId ? '<small style="color:red">اترك الصور فارغة إذا لم ترد تغييرها</small>' : ''}
+                    </div>
+                    
+                    <button type="submit" id="save-btn" class="btn-primary">حفظ</button>
                 </form>
             </div>
         </div>
     `;
+    renderNewProdColors();
 
     document.getElementById('prod-form').onsubmit = async (e) => {
         e.preventDefault();
         const btn = document.getElementById('save-btn');
-        btn.innerText = 'جاري الحفظ...'; btn.disabled = true;
+        btn.innerText = 'جاري...'; btn.disabled = true;
 
         const title = document.getElementById('p-title').value;
         const price = document.getElementById('p-price').value;
+        const oldPrice = document.getElementById('p-old-price').value;
         const desc = document.getElementById('p-desc').value;
         const files = document.getElementById('p-imgs').files;
 
@@ -481,38 +489,57 @@ window.renderAddProductPage = (editId = null) => {
         }
 
         if(!imgs || !imgs.length) { 
-            showToast('يجب إضافة صورة واحدة على الأقل'); 
-            btn.disabled=false; btn.innerText='حفظ البيانات'; return; 
+            showToast('الصور مطلوبة'); 
+            btn.disabled=false; btn.innerText='حفظ'; return; 
         }
 
         const payload = { 
-            title, price, description: desc, 
+            title, price, oldPrice, description: desc, 
             images: imgs, imageCode: imgs[0], 
-            timestamp: Date.now(),
-            colors: ['#000000', '#FFFFFF', '#D4AF37'] // افتراضي
+            colors: selectedColorsForNewProduct,
+            timestamp: Date.now()
         };
 
         if(editId) {
             await updateDoc(doc(db, "products", editId), payload);
-            showToast("تم التعديل بنجاح");
+            showToast("تم التعديل");
         } else {
             await addDoc(collection(db, "products"), payload);
-            showToast("تمت الإضافة بنجاح");
+            showToast("تمت الإضافة");
         }
-
         router('home');
     };
 }
 
+window.renderNewProdColors = () => {
+    const div = document.getElementById('new-prod-colors');
+    if(!div) return;
+    div.innerHTML = selectedColorsForNewProduct.map(c => 
+        `<div class="color-circle" style="background:${c}; position:relative;" onclick="remColFromNew('${c}')">
+            <i class="fas fa-times" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; font-size:10px; width:12px; height:12px; display:flex; align-items:center; justify-content:center;"></i>
+        </div>`
+    ).join('');
+}
+window.addColToNew = (c) => {
+    if(!selectedColorsForNewProduct.includes(c)) {
+        selectedColorsForNewProduct.push(c);
+        renderNewProdColors();
+    }
+}
+window.remColFromNew = (c) => {
+    selectedColorsForNewProduct = selectedColorsForNewProduct.filter(x => x !== c);
+    renderNewProdColors();
+}
+
 window.deleteProduct = async (id) => {
-    if(confirm('هل أنت متأكد تماماً من حذف هذا المنتج؟')) {
+    if(confirm('حذف المنتج نهائياً؟')) {
         await deleteDoc(doc(db, "products", id));
-        showToast("تم حذف المنتج");
+        showToast("تم الحذف");
         router('home');
     }
 }
 
-// أدوات مساعدة
+// أدوات
 function compress(file) {
     return new Promise(r => {
         const reader = new FileReader();
@@ -523,7 +550,7 @@ function compress(file) {
             img.onload = () => {
                 const cvs = document.createElement('canvas');
                 const ctx = cvs.getContext('2d');
-                const s = 800/img.width; // دقة جيدة
+                const s = 800/img.width; 
                 cvs.width = 800; cvs.height = img.height * s;
                 ctx.drawImage(img,0,0,cvs.width,cvs.height);
                 r(cvs.toDataURL('image/jpeg', 0.8));
@@ -531,21 +558,18 @@ function compress(file) {
         }
     });
 }
-
 function showToast(msg) {
     const t = document.getElementById('toast');
     document.getElementById('toast-msg').innerText = msg;
     t.classList.remove('hidden');
     setTimeout(() => t.classList.add('hidden'), 3000);
 }
-
 window.remCart = (i) => {
     cart.splice(i, 1);
     localStorage.setItem('athar_cart', JSON.stringify(cart));
     renderCartPage();
     updateBadge();
 }
-
 window.editColorCart = (i) => {
     const item = cart[i];
     const p = productsCache.find(x => x.id === item.id);
@@ -555,18 +579,15 @@ window.editColorCart = (i) => {
     ).join('');
     document.getElementById('color-modal').classList.remove('hidden');
 }
-
 window.confirmColorUpdate = () => {
     localStorage.setItem('athar_cart', JSON.stringify(cart));
     closeColorModal();
     renderCartPage();
 }
-
 window.closeColorModal = () => document.getElementById('color-modal').classList.add('hidden');
 function updateBadge() { document.getElementById('cart-badge').innerText = cart.reduce((a,b)=>a+b.qty,0); }
 
 // تشغيل
 updateBadge();
-// التحقق من حالة المدير عند البدء
 updateAdminUI();
 router('home');
