@@ -4,58 +4,61 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>أثر | Athar Store</title>
-    <meta name="theme-color" content="#ffffff">
     
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3655/3655163.png">
-
+    <!-- الخطوط والأيقونات -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&family=Amiri:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     
-    <!-- الخلفية تظهر فقط في الرئيسية -->
-    <div id="main-bg">
-        <div class="ramadan-bg"></div>
-        <div class="pattern-overlay"></div>
-    </div>
+    <div id="main-bg"></div>
 
     <!-- الهيدر -->
     <header class="glass-header" id="main-header">
         <div class="container header-content">
             <div class="brand" onclick="router('home')">
-                <div class="logo-circle"><i class="fas fa-kaaba"></i></div>
-                <h1>أثــر</h1>
+                <div class="logo-text">أثــر</div>
+                <i class="fas fa-kaaba logo-icon"></i>
             </div>
+            
             <div class="nav-icons">
-                <div class="cart-btn relative" onclick="router('cart')">
+                <!-- أيقونة إضافة منتج (تظهر للمدير فقط) -->
+                <div class="icon-btn hidden" id="admin-add-btn" onclick="router('admin-add')">
+                    <i class="fas fa-plus"></i>
+                </div>
+
+                <!-- أيقونة السلة -->
+                <div class="icon-btn" onclick="router('cart')">
                     <i class="fas fa-shopping-bag"></i>
-                    <!-- تم إصلاح مكان الرقم -->
                     <span id="cart-badge" class="badge">0</span>
                 </div>
-                <div class="admin-btn" onclick="checkAdmin()">
-                    <i class="fas fa-user-tie"></i>
+
+                <!-- أيقونة دخول المدير -->
+                <div class="icon-btn" onclick="checkAdminAccess()">
+                    <i class="fas fa-user-cog"></i>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- منطقة المحتوى -->
-    <main id="app" class="main-content animate-fade"></main>
+    <!-- المحتوى -->
+    <main id="app" class="main-content"></main>
 
-    <!-- إشعار صغير -->
+    <!-- إشعار عائم (Toast) -->
     <div id="toast" class="toast hidden">
-        <i class="fas fa-check"></i> <span>تم بنجاح</span>
+        <span id="toast-msg">تمت العملية بنجاح</span>
     </div>
 
-    <!-- نافذة تعديل اللون -->
+    <!-- مودال تعديل اللون -->
     <div id="color-modal" class="modal hidden">
         <div class="modal-content">
-            <h3>تعديل اللون</h3>
-            <div id="modal-colors-area" style="display:flex; gap:10px; justify-content:center; margin:20px 0;"></div>
-            <button class="btn-large" onclick="confirmColorUpdate()">حفظ التعديل</button>
-            <button class="btn-text" onclick="closeColorModal()">إلغاء</button>
+            <h3>تغيير اللون</h3>
+            <div id="modal-colors-area" class="colors-grid"></div>
+            <div class="modal-actions">
+                <button class="btn-primary" onclick="confirmColorUpdate()">تأكيد</button>
+                <button class="btn-sec" onclick="closeColorModal()">إلغاء</button>
+            </div>
         </div>
     </div>
 
