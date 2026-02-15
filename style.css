@@ -1,0 +1,225 @@
+:root {
+    --primary: #064e3b;
+    --gold: #d4af37;
+    --gold-gradient: linear-gradient(135deg, #d4af37 0%, #fcd34d 50%, #d4af37 100%);
+    --bg-light: #f8fafc;
+    --white: #ffffff;
+    --radius: 16px;
+    --shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; tap-highlight-color: transparent; }
+
+body {
+    font-family: 'Cairo', sans-serif;
+    background-color: var(--white);
+    color: #1f2937;
+    padding-top: 70px;
+    min-height: 100vh;
+}
+
+/* Backgrounds (Home Only) */
+.ramadan-bg {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at top right, #065f46 0%, #022c22 100%);
+    z-index: -2;
+}
+.pattern-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4z' fill='%23d4af37' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+    z-index: -1;
+}
+
+.container { max-width: 800px; margin: 0 auto; padding: 0 15px; }
+
+/* Header */
+.glass-header {
+    position: fixed; top: 0; left: 0; width: 100%; height: 70px;
+    background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+    z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex; align-items: center;
+}
+.header-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+
+.brand { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.logo-circle {
+    width: 40px; height: 40px; background: var(--gold-gradient);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: var(--primary); font-size: 1.2rem;
+}
+.brand h1 { font-family: 'Amiri'; color: var(--primary); font-size: 1.5rem; }
+
+.nav-icons { display: flex; gap: 15px; position: relative; }
+.nav-icons div {
+    width: 40px; height: 40px; background: #ecfdf5; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--primary); cursor: pointer;
+}
+/* إصلاح مكان البادج */
+.relative { position: relative; }
+.badge {
+    position: absolute; top: -5px; left: -5px; /* تم التعديل لليسار قليلاً */
+    background: #ef4444; color: white;
+    width: 18px; height: 18px; border-radius: 50%; font-size: 0.7rem;
+    display: flex; align-items: center; justify-content: center; 
+    border: 2px solid white; z-index: 2;
+}
+
+/* Product Grid */
+.product-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;
+    padding: 15px; padding-bottom: 30px;
+}
+@media(min-width: 600px) { .product-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.product-card {
+    background: transparent;
+    border-radius: var(--radius);
+    position: relative;
+    cursor: pointer;
+    margin-bottom: 25px; 
+}
+
+.img-box {
+    width: 100%; aspect-ratio: 1/1.2;
+    background: #fff; border-radius: var(--radius);
+    position: relative; overflow: visible; 
+    box-shadow: var(--shadow);
+}
+.p-img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius); }
+
+/* الزر العائم */
+.float-btn-wrapper {
+    position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+    width: 100%; display: flex; justify-content: center; pointer-events: none;
+}
+.float-btn {
+    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.9); /* شفافية */
+    backdrop-filter: blur(5px);
+    padding: 8px 15px; border-radius: 30px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    border: 1px solid rgba(255,255,255,0.6);
+    color: var(--primary); font-weight: 800; font-size: 0.95rem;
+    transition: transform 0.2s;
+}
+.float-btn:active { transform: scale(0.95); }
+
+/* Pages */
+.page-view {
+    background: white; min-height: 100vh;
+    padding: 20px; 
+    position: absolute; top: 0; left: 0; width: 100%;
+    z-index: 50; 
+}
+.cart-page { padding: 0; padding-top: 80px; background: white; }
+
+.back-header { 
+    display: flex; align-items: center; gap: 10px; margin-bottom: 20px; 
+    padding: 0 20px;
+}
+.back-btn {
+    border: none; background: #f3f4f6; width: 40px; height: 40px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 1.1rem; color: #555;
+}
+
+/* Detail Page */
+.detail-content { padding: 0 20px; padding-bottom: 40px; }
+.detail-slider {
+    width: 100%; height: 400px; background: #f9fafb;
+    border-radius: 0 0 30px 30px; margin-bottom: 20px; 
+    overflow: hidden; position: relative; margin-top: -80px;
+}
+.detail-img { width: 100%; height: 100%; object-fit: cover; }
+.thumbs { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+.thumb { width: 60px; height: 60px; border-radius: 12px; border: 2px solid #eee; cursor: pointer; object-fit: cover; }
+
+.qty-control {
+    display: flex; align-items: center; gap: 15px;
+    background: #f3f4f6; padding: 8px 15px; border-radius: 30px;
+}
+.qty-btn {
+    width: 32px; height: 32px; background: white; border: none; border-radius: 50%;
+    font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.btn-large {
+    width: 100%; padding: 16px; border: none; border-radius: 15px;
+    font-size: 1.1rem; font-weight: bold; cursor: pointer;
+    background: var(--primary); color: white;
+    box-shadow: 0 5px 15px rgba(6, 78, 59, 0.3);
+    display: flex; justify-content: center; gap: 10px;
+}
+
+/* Cart Items Styling - Compact & Clean */
+.cart-item {
+    display: flex; gap: 12px; padding: 15px; 
+    border-bottom: 1px solid #f5f5f5;
+    background: white; align-items: flex-start;
+}
+.cart-thumb { 
+    width: 90px; height: 110px; 
+    border-radius: 10px; object-fit: cover; 
+    background: #f8f8f8;
+}
+.cart-info { 
+    flex: 1; display: flex; flex-direction: column; justify-content: space-between;
+    min-height: 110px;
+}
+.cart-title { 
+    font-weight: 700; font-size: 1rem; color: #333;
+    margin-bottom: 5px; line-height: 1.3;
+}
+.cart-color-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 5px;
+}
+.cart-color-circle {
+    width: 20px; height: 20px; border-radius: 50%; 
+    border: 1px solid #ddd;
+}
+.edit-color-btn {
+    font-size: 0.75rem; color: var(--primary); text-decoration: underline; 
+    background: none; border: none; cursor: pointer; padding: 0;
+}
+.cart-price { font-weight: bold; color: var(--primary); font-size: 1.1rem; margin-bottom: 8px; }
+
+.cart-controls {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%;
+}
+.mini-qty {
+    display: flex; align-items: center; gap: 10px;
+    background: #f3f4f6; padding: 4px 10px; border-radius: 20px;
+}
+.mini-qty-btn {
+    width: 24px; height: 24px; border: none; background: white; 
+    border-radius: 50%; font-weight: bold; cursor: pointer;
+}
+.mini-delete {
+    width: 32px; height: 32px; background: #fff1f2; color: #e11d48;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border: none; font-size: 0.9rem;
+}
+
+/* Admin */
+.admin-view { padding: 20px; padding-top: 90px; background: #f8fafc; min-height: 100vh; }
+.admin-card { background: white; padding: 25px; border-radius: 20px; box-shadow: var(--shadow); margin-bottom: 20px; }
+input, select, textarea { width: 100%; padding: 14px; margin-bottom: 15px; border: 2px solid #f1f5f9; border-radius: 12px; font-family: 'Cairo'; }
+
+.color-circle { width: 35px; height: 35px; border-radius: 50%; border: 2px solid #eee; cursor: pointer; }
+
+/* Modal */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; }
+.modal-content { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; text-align: center; }
+.btn-text { background: none; border: none; color: #666; margin-top: 10px; cursor: pointer; text-decoration: underline; }
+
+/* Toast Small */
+.toast { 
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); 
+    background: #333; color: white; padding: 8px 16px; /* مصغر */
+    border-radius: 50px; display: flex; gap: 8px; z-index: 500; 
+    font-size: 0.85rem; align-items: center;
+}
+.hidden { display: none !important; }
