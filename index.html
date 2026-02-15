@@ -5,11 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Athar Store | أثر</title>
     
-    <!-- تحسين محركات البحث SEO -->
+    <link rel="icon" href="https://i.postimg.cc/BbZMFbN2/Gemini-Generated-Image-sike87sike87sike.png" type="image/png">
+    
     <meta name="description" content="متجر أثر للمنتجات الإسلامية، فوانيس رمضان، سجاد صلاة، سبح إلكترونية، ومصاحف بأفضل الأسعار.">
     <meta name="keywords" content="فانوس رمضان, سجاد صلاة, سبحة, مصحف, هدايا إسلامية, أثر ستور, Athar Store">
 
-    <!-- الخطوط والأيقونات -->
+    <meta property="og:title" content="Athar Store | أثر">
+    <meta property="og:description" content="متجر أثر للمنتجات الإسلامية والهدايا الرمضانية.">
+    <meta property="og:image" content="https://i.postimg.cc/BbZMFbN2/Gemini-Generated-Image-sike87sike87sike.png">
+    <meta property="og:url" content="">
+    <meta property="og:type" content="website">
+
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&family=Amiri:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
@@ -18,28 +24,23 @@
     
     <div id="main-bg"></div>
 
-    <!-- الهيدر -->
     <header class="glass-header" id="main-header">
         <div class="container header-content">
-            <!-- الشعار بالإنجليزية -->
             <div class="brand" onclick="router('home')">
                 <div class="logo-text">Athar</div>
                 <i class="fas fa-kaaba logo-icon"></i>
             </div>
             
             <div class="nav-icons">
-                <!-- أيقونة إضافة منتج (تظهر للمدير فقط) -->
                 <div class="icon-btn hidden" id="admin-add-btn" onclick="router('admin-add')">
                     <i class="fas fa-plus"></i>
                 </div>
 
-                <!-- أيقونة السلة -->
                 <div class="icon-btn" onclick="router('cart')">
                     <i class="fas fa-shopping-bag"></i>
                     <span id="cart-badge" class="badge">0</span>
                 </div>
 
-                <!-- أيقونة دخول المدير -->
                 <div class="icon-btn" onclick="checkAdminAccess()">
                     <i class="fas fa-user-lock"></i>
                 </div>
@@ -47,15 +48,12 @@
         </div>
     </header>
 
-    <!-- المحتوى -->
     <main id="app" class="main-content"></main>
 
-    <!-- إشعار عائم (Toast) -->
     <div id="toast" class="toast hidden">
         <span id="toast-msg">تمت العملية بنجاح</span>
     </div>
 
-    <!-- مودال تعديل اللون -->
     <div id="color-modal" class="modal hidden">
         <div class="modal-content">
             <h3>تغيير اللون</h3>
