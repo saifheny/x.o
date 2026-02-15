@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAjE-2q6PONBkCin9ZN22gDp9Q8pAH9ZW8",
@@ -15,8 +15,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// الإعدادات
-const ADMIN_PIN = "2024"; // الرمز السري للمدير
+const ADMIN_PIN = "2024"; 
 const WA_PHONE = "201202687082";
 const SHIPPING_COST = 50;
 
@@ -28,7 +27,6 @@ const governorates = [
     "مطروح", "شمال سيناء", "جنوب سيناء"
 ];
 
-// ألوان النظام (للمدير عند الإضافة)
 const systemColors = [
     '#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF', 
     '#FFFF00', '#800080', '#FFA500', '#A52A2A', '#808080', 
@@ -47,9 +45,29 @@ let cart = JSON.parse(localStorage.getItem('athar_cart')) || [];
 let productsCache = [];
 let slideIntervals = {}; 
 let isAdmin = sessionStorage.getItem('isAdmin') === 'true';
-let selectedColorsForNewProduct = []; // لتخزين الألوان المختارة عند الإضافة
+let selectedColorsForNewProduct = []; 
 
-// --- التوجيه (Router) ---
+window.addEventListener('DOMContentLoaded', async () => {
+    checkHash();
+});
+
+window.checkHash = async () => {
+    const hash = window.location.hash;
+    if(hash.startsWith('#product=')) {
+        const id = hash.split('=')[1];
+        const docRef = doc(db, "products", id);
+        const docSnap = await getDoc(docRef);
+        if(docSnap.exists()) {
+            productsCache = [{ id: docSnap.id, ...docSnap.data() }];
+            router('product', id);
+        } else {
+            router('home');
+        }
+    } else {
+        router('home');
+    }
+}
+
 window.router = function(route, param = null) {
     const header = document.getElementById('main-header');
     
@@ -59,12 +77,14 @@ window.router = function(route, param = null) {
     updateAdminUI();
 
     if(route === 'home') {
+        history.pushState(null, null, ' ');
         header.style.display = 'flex';
         renderHome();
     } else if (route === 'product') {
         header.style.display = 'none'; 
         renderProductPage(param);
     } else if (route === 'cart') {
+        history.pushState(null, null, '#cart');
         header.style.display = 'flex';
         renderCartPage();
     } else if (route === 'admin-login') {
@@ -81,7 +101,6 @@ function updateAdminUI() {
     addBtn.classList.toggle('hidden', !isAdmin);
 }
 
-// --- الرئيسية ---
 async function renderHome() {
     const appDiv = document.getElementById('app');
     appDiv.innerHTML = `<div class="product-grid">${Array(4).fill('<div class="img-box skeleton" style="height:200px;background:#eee;border-radius:12px;"></div>').join('')}</div>`;
@@ -97,7 +116,6 @@ async function renderHome() {
             const imgId = `img-${p.id}`;
             const oldPriceHtml = p.oldPrice ? `<span class="old-price-tag">${p.oldPrice}</span>` : '';
 
-            // أزرار التحكم
             let adminControls = '';
             if(isAdmin) {
                 adminControls = `
@@ -149,14 +167,12 @@ async function renderHome() {
     } catch(e) { console.error(e); }
 }
 
-// --- صفحة المنتج ---
 window.renderProductPage = (id) => {
     const p = productsCache.find(x => x.id === id);
     if(!p) return router('home');
     const images = p.images || [p.imageCode];
     const appDiv = document.getElementById('app');
 
-    // الألوان
     let colorsHtml = '';
     if(p.colors && p.colors.length) {
         colorsHtml = `
@@ -219,10 +235,36 @@ window.renderProductPage = (id) => {
                     <button class="btn-primary" onclick="addToCart('${p.id}')">
                         إضافة للسلة
                     </button>
+                    <button class="btn-share" onclick="shareProduct('${p.id}', '${p.title}')">
+                        <i class="fas fa-share-alt"></i> مشاركة المنتج
+                    </button>
                 </div>
             </div>
         </div>
     `;
+}
+
+window.shareProduct = async (id, title) => {
+    const url = `${window.location.origin}${window.location.pathname}#product=${id}`;
+    
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: title,
+                text: `شاهد هذا المنتج المميز من متجر أثر: ${title}`,
+                url: url
+            });
+        } catch (err) {
+            console.log('Share failed', err);
+        }
+    } else {
+        try {
+            await navigator.clipboard.writeText(url);
+            showToast("تم نسخ رابط المنتج");
+        } catch (err) {
+            showToast("فشل نسخ الرابط");
+        }
+    }
 }
 
 window.changeMainImage = (src, el) => {
@@ -242,7 +284,6 @@ window.updQty = (n) => {
     el.innerText = v;
 }
 
-// --- السلة ---
 window.addToCart = (id) => {
     const p = productsCache.find(x => x.id === id);
     const qty = parseInt(document.getElementById('qty-val').innerText);
@@ -372,9 +413,8 @@ window.sendWA = (total) => {
     router('home');
 }
 
-// --- نظام المدير ---
 window.checkAdminAccess = () => {
-    if(isAdmin) router('admin-add'); // لو مدير يروح يضيف
+    if(isAdmin) router('admin-add'); 
     else router('admin-login');
 }
 
@@ -403,7 +443,6 @@ window.verifyPin = () => {
     }
 }
 
-// إضافة / تعديل منتج
 window.renderAddProductPage = (editId = null) => {
     const appDiv = document.getElementById('app');
     let data = { title: '', price: '', oldPrice: '', description: '', colors: [] };
@@ -418,7 +457,7 @@ window.renderAddProductPage = (editId = null) => {
         }
         formTitle = "تعديل منتج";
     } else {
-        selectedColorsForNewProduct = ['#000000', '#FFFFFF']; // ألوان افتراضية
+        selectedColorsForNewProduct = ['#000000', '#FFFFFF'];
     }
 
     appDiv.innerHTML = `
@@ -539,7 +578,6 @@ window.deleteProduct = async (id) => {
     }
 }
 
-// أدوات
 function compress(file) {
     return new Promise(r => {
         const reader = new FileReader();
@@ -587,7 +625,6 @@ window.confirmColorUpdate = () => {
 window.closeColorModal = () => document.getElementById('color-modal').classList.add('hidden');
 function updateBadge() { document.getElementById('cart-badge').innerText = cart.reduce((a,b)=>a+b.qty,0); }
 
-// تشغيل
 updateBadge();
 updateAdminUI();
 router('home');
